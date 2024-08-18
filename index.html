@@ -1,0 +1,110 @@
+import React from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+const pollsterRatings = {
+  'The New York Times/Siena College': 0.98,
+  'BSG/GS Strategy Group': 0.85,
+  'YouGov Blue': 0.87,
+  'Trafalgar Group': 0.90,
+  'Cygnal': 0.89,
+  'Redfield & Wilton Strategies': 0.88,
+  'Morning Consult': 0.92,
+  'Public Policy Polling': 0.89,
+  'Emerson College': 0.93,
+};
+
+const pollData = [
+  { date: '2024-08-14', harris: 46, trump: 44, sampleSize: 655, type: 'LV', pollster: 'The New York Times/Siena College' },
+  { date: '2024-08-14', harris: 45, trump: 42, sampleSize: 655, type: 'RV', pollster: 'The New York Times/Siena College' },
+  { date: '2024-08-14', harris: 49, trump: 47, sampleSize: 655, type: 'LV', pollster: 'The New York Times/Siena College' },
+  { date: '2024-08-14', harris: 49, trump: 46, sampleSize: 655, type: 'RV', pollster: 'The New York Times/Siena College' },
+  { date: '2024-08-02', harris: 48, trump: 47, sampleSize: 403, type: 'LV', pollster: 'BSG/GS Strategy Group' },
+  { date: '2024-08-02', harris: 46, trump: 44, sampleSize: 403, type: 'LV', pollster: 'BSG/GS Strategy Group' },
+  { date: '2024-08-09', harris: 46, trump: 46, sampleSize: 802, type: 'RV', pollster: 'YouGov Blue' },
+  { date: '2024-08-08', harris: 45, trump: 49, sampleSize: 1082, type: 'LV', pollster: 'Trafalgar Group' },
+  { date: '2024-08-05', harris: 44, trump: 47, sampleSize: 600, type: 'LV', pollster: 'Cygnal' },
+  { date: '2024-08-03', harris: 41, trump: 44, sampleSize: 714, type: 'LV', pollster: 'Redfield & Wilton Strategies' },
+  { date: '2024-07-28', harris: 46, trump: 48, sampleSize: 786, type: 'RV', pollster: 'Morning Consult' },
+  { date: '2024-07-28', harris: 44, trump: 45, sampleSize: 786, type: 'RV', pollster: 'Morning Consult' },
+  { date: '2024-07-24', harris: 43, trump: 46, sampleSize: 586, type: 'LV', pollster: 'Redfield & Wilton Strategies' },
+  { date: '2024-07-20', harris: 44, trump: 48, sampleSize: 573, type: 'RV', pollster: 'Public Policy Polling' },
+  { date: '2024-05-12', harris: 40, trump: 50, sampleSize: 784, type: 'RV', pollster: 'Morning Consult' },
+  { date: '2024-02-16', harris: 41, trump: 50, sampleSize: 1000, type: 'RV', pollster: 'Emerson College' },
+];
+
+const calculateAggregate = (data, candidate, currentDate) => {
+  const halfLifeDays = 14;
+  const decayFactor = Math.log(2) / (halfLifeDays * 24 * 60 * 60 * 1000);
+
+  const weightedSum = data.reduce((acc, poll) => {
+    const pollDate = new Date(poll.date);
+    const timeDiff = currentDate - pollDate;
+    const decay = Math.exp(-decayFactor * timeDiff);
+    const pollsterRating = pollsterRatings[poll.pollster] || 0.85;
+    const weight = poll.sampleSize * (poll.type === 'LV' ? 1.2 : 1) * decay * pollsterRating;
+    return acc + poll[candidate] * weight;
+  }, 0);
+
+  const totalWeight = data.reduce((acc, poll) => {
+    const pollDate = new Date(poll.date);
+    const timeDiff = currentDate - pollDate;
+    const decay = Math.exp(-decayFactor * timeDiff);
+    const pollsterRating = pollsterRatings[poll.pollster] || 0.85;
+    return acc + poll.sampleSize * (poll.type === 'LV' ? 1.2 : 1) * decay * pollsterRating;
+  }, 0);
+
+  return weightedSum / totalWeight;
+};
+
+const NorthCarolinaPollingAggregate = () => {
+  const aggregateData = pollData
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .map((poll, index, sortedPolls) => {
+      const currentDate = new Date(poll.date);
+      const pastPolls = sortedPolls.slice(0, index + 1);
+      return {
+        ...poll,
+        harrisAggregate: calculateAggregate(pastPolls, 'harris', currentDate),
+        trumpAggregate: calculateAggregate(pastPolls, 'trump', currentDate)
+      };
+    });
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const diff = (data.harrisAggregate - data.trumpAggregate).toFixed(1);
+      const leader = diff > 0 ? 'Harris' : diff < 0 ? 'Trump' : 'Tie';
+      const margin = Math.abs(diff);
+      const color = leader === 'Harris' ? '#2196F3' : leader === 'Trump' ? '#FF0000' : '#000000';
+      const leadText = leader === 'Tie' ? 'Tie' : `${leader} +${margin}`;
+
+      return (
+        <div className="bg-white p-4 border border-gray-200 rounded shadow-md" style={{ fontFamily: 'Arial, sans-serif' }}>
+          <p className="text-lg font-bold" style={{ marginBottom: '8px' }}>{data.date}</p>
+          <p className="text-2xl font-bold" style={{ color: color, marginBottom: '12px' }}>{leadText}</p>
+          <p className="text-sm">Latest Poll: {data.pollster}</p>
+          <p className="text-sm">Sample Size: {data.sampleSize} ({data.type})</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="w-full h-96">
+      <h2 className="text-2xl font-bold mb-4">North Carolina 2024 Polling Aggregate</h2>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={aggregateData}>
+          <XAxis dataKey="date" />
+          <YAxis domain={[0, 60]} />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+          <Line type="monotone" dataKey="harrisAggregate" stroke="#2196F3" name="Harris" dot={false} strokeWidth={3} />
+          <Line type="monotone" dataKey="trumpAggregate" stroke="#FF0000" name="Trump" dot={false} strokeWidth={3} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+export default NorthCarolinaPollingAggregate;
