@@ -1,37 +1,7 @@
-import React, { useState } from 'react';
+# ConservativePolling
 
-function SimpleElectionGame() {
-  const [votes, setVotes] = useState({ candidate1: 0, candidate2: 0 });
+This repository contains a single-page election forecast demo built with HTML, CSS and vanilla JavaScript.
 
-  const handleVote = (candidate) => {
-    setVotes(prev => ({
-      ...prev,
-      [candidate]: prev[candidate] + 1
-    }));
-  };
+The file `index.html` renders several interactive visuals including an electoral map, a snake-style chart and simulated electoral vote distributions. The demo does not require a build step—simply open `index.html` in a browser.
 
-  return (
-    <div style={{ fontFamily: 'Arial, sans-serif', padding: '20px', maxWidth: '400px', margin: '0 auto' }}>
-      <h1 style={{ textAlign: 'center' }}>Simple Election Game</h1>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <div>
-          <h2>Candidate 1</h2>
-          <p>Votes: {votes.candidate1}</p>
-          <button onClick={() => handleVote('candidate1')} style={{ padding: '10px', backgroundColor: 'lightblue' }}>
-            Vote for Candidate 1
-          </button>
-        </div>
-        <div>
-          <h2>Candidate 2</h2>
-          <p>Votes: {votes.candidate2}</p>
-          <button onClick={() => handleVote('candidate2')} style={{ padding: '10px', backgroundColor: 'lightgreen' }}>
-            Vote for Candidate 2
-          </button>
-        </div>
-      </div>
-      <p style={{ textAlign: 'center' }}>Total Votes: {votes.candidate1 + votes.candidate2}</p>
-    </div>
-  );
-}
-
-export default SimpleElectionGame;
+The `SimpleElectionGame.jsx` component (previously stored as the README) is a small React component that demonstrates a minimal voting game. It is not used by the main page but is included as an example.
