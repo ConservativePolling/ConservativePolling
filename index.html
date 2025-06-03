@@ -226,7 +226,18 @@
     .distribution-labels { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: clamp(0.95rem, 1.1vw, 1.2rem); font-weight: 600; padding: 0 10px; }
     .label-left { color: var(--navy); text-align: left; flex: 1; } .label-center { color: var(--text-secondary-light); text-align: center; flex: 0 0 auto; font-size: clamp(0.9rem, 1vw, 1.1rem); font-weight: 500; }
     body.dark .label-center { color: var(--text-secondary-dark); } .label-right { color: var(--crimson); text-align: right; flex: 1; }
-    .distribution-chart { height: clamp(400px, 50vh, 600px); width: 100%; background: var(--chart-bg-light); border-radius: 10px; border: 1px solid var(--border-light); position: relative; overflow: hidden; margin-bottom: 20px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    .distribution-chart {
+      height: clamp(400px, 50vh, 600px);
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto 20px;
+      background: var(--chart-bg-light);
+      border-radius: 10px;
+      border: 1px solid var(--border-light);
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+    }
     body.dark .distribution-chart { background: var(--chart-bg-dark); border-color: var(--border-dark); box-shadow: inset 0 1px 3px rgba(255,255,255,0.02); }
     #distribution-svg circle { transition: opacity 0.08s ease-out; cursor: pointer; }
     .distribution-footer { display: flex; flex-direction: column; gap: clamp(18px, 2vw, 25px); margin-top: clamp(15px, 2vw, 20px);}
@@ -354,10 +365,17 @@
     body.dark #popular-vote-chart-svg .pv-hover-circle.mm { stroke: var(--chart-bg-dark); }
     body.dark #popular-vote-chart-svg .pv-hover-circle.jr { stroke: var(--chart-bg-dark); }
     #popular-vote-chart-svg .pv-hover-overlay-rect {
-  fill: rgba(255,255,255,0.001);
-  cursor: crosshair;
-  pointer-events: all;
-}
+      fill: rgba(255,255,255,0.001);
+      cursor: crosshair;
+      pointer-events: all;
+    }
+    #popular-vote-chart-svg:hover .pv-hover-overlay-rect {
+      stroke: var(--border-light);
+      stroke-width: 0.5;
+    }
+    body.dark #popular-vote-chart-svg:hover .pv-hover-overlay-rect {
+      stroke: var(--border-dark);
+    }
 
     .pv-x-axis { display: flex; justify-content: space-between; font-size: clamp(0.8rem, 1vw, 1.1rem); color: var(--text-secondary-light); padding-top: clamp(8px, 1vw, 12px); font-weight: 400; }
     body.dark .pv-x-axis { color: var(--text-secondary-dark); }
@@ -469,7 +487,14 @@
     .tooltip-map-state-content .margin-value.tossup { color: var(--tie-grey-light); } body.dark .tooltip-map-state-content .margin-value.tossup { color: var(--tie-grey-dark); }
 
     /* Electoral SVG Map Section */
-    .electoral-map-section { padding: clamp(60px, 6vw, 100px) 20px; text-align: center; background: var(--bg-light); border-top: 1px solid var(--border-light); }
+    .electoral-map-section {
+      padding: clamp(60px, 6vw, 100px) 20px;
+      text-align: center;
+      background: var(--bg-light);
+      border-top: 1px solid var(--border-light);
+      max-width: 1600px;
+      margin: 0 auto;
+    }
     body.dark .electoral-map-section { background: var(--bg-dark); border-top-color: var(--border-dark); }
     .map-section-title { font-size: clamp(2.2rem, 3.5vw, 4rem); font-weight: 700; color: var(--text-primary-light); margin-bottom: clamp(15px, 2vw, 25px); }
     body.dark .map-section-title { color: var(--text-primary-dark); }
@@ -566,9 +591,14 @@
         --s-bg-dark-mode: #0a0a0a; --s-surface-dark-mode: #1a1a1a; --s-border-dark-mode: #2c2c2c;
     }
     .snake-chart-section {
-        padding: clamp(50px, 5vw, 80px) 20px clamp(60px, 6vw, 100px); background: var(--s-bg-light-mode); color: var(--s-text-primary-light);
-        font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease;
+        padding: clamp(50px, 5vw, 80px) 20px clamp(60px, 6vw, 100px);
+        background: var(--s-bg-light-mode);
+        color: var(--s-text-primary-light);
+        font-family: 'Inter', sans-serif;
+        transition: background-color 0.3s ease, color 0.3s ease;
         border-top: 1px solid var(--s-border-light-mode);
+        max-width: 1600px;
+        margin: 0 auto;
     }
     body.dark .snake-chart-section {
         background: var(--s-bg-dark-mode); color: var(--s-text-primary-dark);
