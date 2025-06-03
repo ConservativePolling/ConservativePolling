@@ -288,7 +288,7 @@
 
     /* --- Popular Vote Aggregate Section --- */
     .popular-vote-aggregate-section {
-      max-width: 1300px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: clamp(40px, 5vw, 80px) 20px clamp(50px, 6vw, 90px);
       background: var(--surface-light);
@@ -311,14 +311,14 @@
       max-width: 1400px; margin: 0 auto;
       background-color: var(--chart-bg-light);
       border: 1px solid var(--border-light);
-      border-radius: 12px;
+      border-radius: 10px;
       padding: clamp(20px, 3vw, 50px) clamp(15px, 2vw, 40px) clamp(15px, 2vw, 25px) clamp(10px, 1vw, 15px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
     body.dark .pv-chart-wrapper {
       background-color: var(--chart-bg-dark);
       border-color: var(--border-dark);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
 
     .pv-chart-display-area { display: flex; width: 100%; }
@@ -336,7 +336,7 @@
     .pv-plot-area-container { flex-grow: 1; position: relative; }
 
     #popular-vote-chart-svg { width: 100%; height: clamp(250px, 35vh, 450px); display: block; overflow: visible; }
-    #popular-vote-chart-svg .pv-grid-line { stroke: var(--border-light); stroke-width: 0.5; opacity: 0.4; }
+    #popular-vote-chart-svg .pv-grid-line { stroke: var(--border-light); stroke-width: 0.4; opacity: 0.4; }
     body.dark #popular-vote-chart-svg .pv-grid-line { stroke: var(--border-dark); opacity: 0.3; }
 
     #popular-vote-chart-svg .pv-confidence-band-mm { fill: var(--navy); opacity: 0.08; }
@@ -368,10 +368,11 @@
       fill: rgba(255,255,255,0.001);
       cursor: crosshair;
       pointer-events: all;
+      stroke-width: 0;
     }
     #popular-vote-chart-svg:hover .pv-hover-overlay-rect {
       stroke: var(--border-light);
-      stroke-width: 0.5;
+      stroke-width: 0.4;
     }
     body.dark #popular-vote-chart-svg:hover .pv-hover-overlay-rect {
       stroke: var(--border-dark);
