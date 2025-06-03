@@ -1,110 +1,1678 @@
-import React from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presidential Election Forecast 2048</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap');
 
-const pollsterRatings = {
-  'The New York Times/Siena College': 0.98,
-  'BSG/GS Strategy Group': 0.85,
-  'YouGov Blue': 0.87,
-  'Trafalgar Group': 0.90,
-  'Cygnal': 0.89,
-  'Redfield & Wilton Strategies': 0.88,
-  'Morning Consult': 0.92,
-  'Public Policy Polling': 0.89,
-  'Emerson College': 0.93,
-};
+    :root {
+      --bg-light: #f4f6f8;
+      --bg-dark: #0a0a0a;
+      --surface-light: #ffffff;
+      --surface-dark: #121212;
+      --text-primary-light: #1a1a1a;
+      --text-primary-dark: #e0e0e0;
+      --text-secondary-light: #666666;
+      --text-secondary-dark: #b0b0b0;
+      --border-light: #e0e0e0;
+      --border-dark: #2c2c2c;
+      --crimson: #e53935; /* JR (Republican) color */
+      --navy: #1e88e5;    /* ModerateMonicka (Democrat) color */
+      --tie-grey-light: #9e9e9e;
+      --tie-grey-dark: #757575;
+      --chart-bg-light: #ffffff;
+      --chart-bg-dark: #0d0d0d; 
+      --tooltip-bg-light: rgba(255, 255, 255, 0.98);
+      --tooltip-bg-dark: rgba(30, 30, 30, 0.98);
+      --tooltip-shadow-light: rgba(0,0,0,0.15);
+      --tooltip-shadow-dark: rgba(0,0,0,0.3);
 
-const pollData = [
-  { date: '2024-08-14', harris: 46, trump: 44, sampleSize: 655, type: 'LV', pollster: 'The New York Times/Siena College' },
-  { date: '2024-08-14', harris: 45, trump: 42, sampleSize: 655, type: 'RV', pollster: 'The New York Times/Siena College' },
-  { date: '2024-08-14', harris: 49, trump: 47, sampleSize: 655, type: 'LV', pollster: 'The New York Times/Siena College' },
-  { date: '2024-08-14', harris: 49, trump: 46, sampleSize: 655, type: 'RV', pollster: 'The New York Times/Siena College' },
-  { date: '2024-08-02', harris: 48, trump: 47, sampleSize: 403, type: 'LV', pollster: 'BSG/GS Strategy Group' },
-  { date: '2024-08-02', harris: 46, trump: 44, sampleSize: 403, type: 'LV', pollster: 'BSG/GS Strategy Group' },
-  { date: '2024-08-09', harris: 46, trump: 46, sampleSize: 802, type: 'RV', pollster: 'YouGov Blue' },
-  { date: '2024-08-08', harris: 45, trump: 49, sampleSize: 1082, type: 'LV', pollster: 'Trafalgar Group' },
-  { date: '2024-08-05', harris: 44, trump: 47, sampleSize: 600, type: 'LV', pollster: 'Cygnal' },
-  { date: '2024-08-03', harris: 41, trump: 44, sampleSize: 714, type: 'LV', pollster: 'Redfield & Wilton Strategies' },
-  { date: '2024-07-28', harris: 46, trump: 48, sampleSize: 786, type: 'RV', pollster: 'Morning Consult' },
-  { date: '2024-07-28', harris: 44, trump: 45, sampleSize: 786, type: 'RV', pollster: 'Morning Consult' },
-  { date: '2024-07-24', harris: 43, trump: 46, sampleSize: 586, type: 'LV', pollster: 'Redfield & Wilton Strategies' },
-  { date: '2024-07-20', harris: 44, trump: 48, sampleSize: 573, type: 'RV', pollster: 'Public Policy Polling' },
-  { date: '2024-05-12', harris: 40, trump: 50, sampleSize: 784, type: 'RV', pollster: 'Morning Consult' },
-  { date: '2024-02-16', harris: 41, trump: 50, sampleSize: 1000, type: 'RV', pollster: 'Emerson College' },
-];
+      --map-stroke-light: #ffffff;
+      --map-stroke-dark: #0a0a0a;
+      --map-default-fill-light: #e0e0e0;
+      --map-default-fill-dark: #222222;
+      --map-hover-opacity: 0.8;
 
-const calculateAggregate = (data, candidate, currentDate) => {
-  const halfLifeDays = 14;
-  const decayFactor = Math.log(2) / (halfLifeDays * 24 * 60 * 60 * 1000);
+      /* Map Category Colors */
+      --solid-b-color: var(--navy);
+      --solid-r-color: var(--crimson);
+      --likely-b-color-light: #64b5f6; --likely-b-color-dark:  #1976d2;
+      --lean-b-color-light:   #90caf9; --lean-b-color-dark:    #42a5f5;
+      --tossup-color-light:   #D0BDF0; --tossup-color-dark:    #BFB9FA;
+      --lean-r-color-light:   #ef9a9a; --lean-r-color-dark:    #e57373;
+      --likely-r-color-light: #e57373; --likely-r-color-dark:  #d32f2f;
+    }
 
-  const weightedSum = data.reduce((acc, poll) => {
-    const pollDate = new Date(poll.date);
-    const timeDiff = currentDate - pollDate;
-    const decay = Math.exp(-decayFactor * timeDiff);
-    const pollsterRating = pollsterRatings[poll.pollster] || 0.85;
-    const weight = poll.sampleSize * (poll.type === 'LV' ? 1.2 : 1) * decay * pollsterRating;
-    return acc + poll[candidate] * weight;
-  }, 0);
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  const totalWeight = data.reduce((acc, poll) => {
-    const pollDate = new Date(poll.date);
-    const timeDiff = currentDate - pollDate;
-    const decay = Math.exp(-decayFactor * timeDiff);
-    const pollsterRating = pollsterRatings[poll.pollster] || 0.85;
-    return acc + poll.sampleSize * (poll.type === 'LV' ? 1.2 : 1) * decay * pollsterRating;
-  }, 0);
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-primary-light);
+      transition: background-color 0.3s ease, color 0.3s ease;
+      font-smooth: antialiased;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body.dark { background: var(--bg-dark); color: var(--text-primary-dark); }
 
-  return weightedSum / totalWeight;
-};
+    .theme-toggle {
+      position: fixed; top: 20px; right: 24px; z-index: 10002;
+      background: var(--surface-light); border: 1px solid var(--border-light);
+      border-radius: 8px; padding: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    body.dark .theme-toggle { background: var(--surface-dark); border-color: var(--border-dark); box-shadow: 0 2px 8px rgba(255,255,255,0.04); }
+    .theme-btn {
+      background: none; border: none; padding: 8px; border-radius: 4px;
+      color: var(--text-secondary-light); cursor: pointer; transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; font-size: 14px;
+    }
+    body.dark .theme-btn { color: var(--text-secondary-dark); }
+    .theme-btn:hover { background: rgba(0,0,0,0.04); color: var(--text-primary-light); }
+    body.dark .theme-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary-dark); }
+    .theme-btn.active { background: var(--navy); color: white; }
 
-const NorthCarolinaPollingAggregate = () => {
-  const aggregateData = pollData
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .map((poll, index, sortedPolls) => {
-      const currentDate = new Date(poll.date);
-      const pastPolls = sortedPolls.slice(0, index + 1);
-      return {
-        ...poll,
-        harrisAggregate: calculateAggregate(pastPolls, 'harris', currentDate),
-        trumpAggregate: calculateAggregate(pastPolls, 'trump', currentDate)
-      };
+    .page-header { 
+      background: var(--surface-light); 
+      border-bottom: 1px solid var(--border-light); 
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    body.dark .page-header { 
+      background: var(--surface-dark); 
+      border-bottom-color: var(--border-dark); 
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    .nav { 
+      border-bottom: 1px solid var(--border-light); 
+      padding: 0 clamp(20px, 2.5vw, 30px); 
+    }
+    body.dark .nav { border-bottom-color: var(--border-dark); }
+    .nav-content { 
+      max-width: 1400px; margin: 0 auto; display: flex; 
+      justify-content: space-between; align-items: center; 
+      height: clamp(60px, 7vh, 80px); 
+    }
+    .nav-left { display: flex; align-items: center; gap: clamp(30px, 4vw, 45px); }
+    .logo { 
+      font-size: clamp(20px, 2.5vw, 28px); font-weight: 800; 
+      color: var(--text-primary-light); 
+      background: linear-gradient(135deg, var(--navy), var(--crimson));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+    }
+    body.dark .logo { color: var(--text-primary-dark); }
+    .nav-links { display: flex; gap: clamp(25px, 3vw, 35px); }
+    .nav-link { 
+      color: var(--text-secondary-light); text-decoration: none; 
+      font-size: clamp(16px, 1.8vw, 20px); font-weight: 500; 
+      transition: all 0.3s ease; padding: clamp(6px, 0.8vw, 10px) clamp(12px, 1.5vw, 18px);
+      border-radius: clamp(6px, 0.8vw, 10px);
+    }
+    body.dark .nav-link { color: var(--text-secondary-dark); }
+    .nav-link:hover, .nav-link.active { 
+      color: var(--text-primary-light); font-weight: 700; 
+      background: rgba(0,0,0,0.05);
+      transform: translateY(-1px);
+    }
+    body.dark .nav-link:hover, .dark .nav-link.active { 
+      color: var(--text-primary-dark); 
+      background: rgba(255,255,255,0.05);
+    }
+    .nav-right .nav-dropdown { 
+      color: var(--text-secondary-light); 
+      font-size: clamp(14px, 1.6vw, 18px); cursor: pointer;
+      padding: clamp(6px, 0.8vw, 10px) clamp(12px, 1.5vw, 18px);
+      border-radius: clamp(6px, 0.8vw, 10px);
+      transition: all 0.3s ease;
+    }
+    body.dark .nav-right .nav-dropdown { color: var(--text-secondary-dark); }
+    .nav-right .nav-dropdown:hover {
+      color: var(--text-primary-light);
+      background: rgba(0,0,0,0.05);
+      transform: translateY(-1px);
+    }
+    body.dark .nav-right .nav-dropdown:hover {
+      color: var(--text-primary-dark);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .main-content-area { max-width: 1200px; margin: 0 auto; padding: 50px 20px 70px; text-align: center; }
+    .timestamp { font-size: clamp(0.8rem, 1vw, 1rem); color: var(--text-secondary-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 30px; font-weight: 500; }
+    body.dark .timestamp { color: var(--text-secondary-dark); }
+    .main-headline { font-size: clamp(2rem, 4vw, 4rem); font-weight: 800; color: var(--text-primary-light); line-height: 1.15; margin-bottom: 15px; letter-spacing: -0.025em; }
+    body.dark .main-headline { color: var(--text-primary-dark); }
+    .main-subtitle { font-size: clamp(1.1rem, 1.5vw, 1.5rem); color: var(--text-secondary-light); line-height: 1.5; margin-bottom: 45px; font-weight: 400; max-width: 900px; margin-left: auto; margin-right: auto; }
+    body.dark .main-subtitle { color: var(--text-secondary-dark); }
+
+    .win-probabilities { margin-bottom: 50px; }
+    .prob-line { font-size: clamp(1.75rem, 2.5vw, 2.5rem); line-height: 1.3; margin-bottom: 10px; }
+    .candidate-name { font-weight: 700; }
+    .prob-jr .candidate-name { color: var(--crimson); }
+    .prob-moderateMonicka .candidate-name { color: var(--navy); }
+    .win-text { color: var(--text-primary-light); font-weight: 400; }
+    body.dark .win-text { color: var(--text-primary-dark); }
+    .win-number { font-weight: 700; font-size: clamp(2rem, 3vw, 3rem); }
+    .prob-jr .win-number { color: var(--crimson); }
+    .prob-moderateMonicka .win-number { color: var(--navy); }
+    .times-text { color: var(--text-primary-light); font-weight: 400; }
+    body.dark .times-text { color: var(--text-primary-dark); }
+    .simulation-text { font-size: clamp(1.1rem, 1.3vw, 1.4rem); color: var(--text-secondary-light); margin: 20px 0; font-style: italic; }
+    body.dark .simulation-text { color: var(--text-secondary-dark); }
+    .tie-probability { font-size: clamp(1rem, 1.2vw, 1.3rem); color: var(--text-secondary-light); margin-top: 20px; }
+    body.dark .tie-probability { color: var(--text-secondary-dark); }
+
+    .simulation-summary { 
+      display: inline-flex; flex-direction: row; align-items: flex-start; 
+      gap: clamp(25px, 3vw, 35px); background: var(--surface-light); 
+      border: 1px solid var(--border-light); border-radius: clamp(10px, 1.2vw, 15px); 
+      padding: clamp(25px, 3vw, 35px) clamp(30px, 3.5vw, 45px); margin: 0 auto 50px; 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08); 
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+    body.dark .simulation-summary { 
+      background: var(--surface-dark); border-color: var(--border-dark); 
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15); 
+    }
+    .simulation-summary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+    body.dark .simulation-summary:hover {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+    .sim-graphic { 
+      font-size: clamp(2.2rem, 3vw, 3rem); opacity: 0.9; margin-top: 2px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+    .sim-stats { text-align: left; }
+    .sim-line { 
+      display: flex; justify-content: space-between; align-items: center; 
+      margin-bottom: clamp(8px, 1vw, 12px); font-size: clamp(0.9rem, 1.1vw, 1.1rem); 
+      min-width: clamp(280px, 30vw, 350px); 
+    }
+    .sim-line:last-of-type { margin-bottom: clamp(15px, 2vw, 20px); }
+    .candidate.jr { color: var(--crimson); font-weight: 700; }
+    .candidate.moderateMonicka { color: var(--navy); font-weight: 700; }
+    .no-winner { color: var(--text-secondary-light); font-weight: 600; }
+    body.dark .no-winner { color: var(--text-secondary-dark); }
+    .sim-count { 
+      font-weight: 700; color: var(--text-primary-light); 
+      margin-left: clamp(10px, 1.2vw, 15px); 
+      font-family: 'Source Code Pro', monospace;
+    }
+    body.dark .sim-count { color: var(--text-primary-dark); }
+    .sim-total { 
+      font-size: clamp(0.8rem, 0.9vw, 0.9rem); color: var(--text-secondary-light); 
+      text-align: center; border-top: 1px solid var(--border-light); 
+      padding-top: clamp(12px, 1.5vw, 18px); font-weight: 600; 
+    }
+    body.dark .sim-total { color: var(--text-secondary-dark); border-top-color: var(--border-dark); }
+
+    .distribution-container { padding: 0; margin: 0 auto; max-width: 1400px; position: relative; }
+    .distribution-header { text-align: center; margin-bottom: 25px; }
+    .distribution-title { font-size: clamp(1.4rem, 2vw, 2.2rem); font-weight: 700; color: var(--text-primary-light); margin-bottom: 8px; }
+    body.dark .distribution-title { color: var(--text-primary-dark); }
+    .distribution-subtitle { font-size: clamp(1rem, 1.2vw, 1.3rem); color: var(--text-secondary-light); font-weight: 400; }
+    body.dark .distribution-subtitle { color: var(--text-secondary-dark); }
+    .distribution-labels { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: clamp(0.95rem, 1.1vw, 1.2rem); font-weight: 600; padding: 0 10px; }
+    .label-left { color: var(--navy); text-align: left; flex: 1; } .label-center { color: var(--text-secondary-light); text-align: center; flex: 0 0 auto; font-size: clamp(0.9rem, 1vw, 1.1rem); font-weight: 500; }
+    body.dark .label-center { color: var(--text-secondary-dark); } .label-right { color: var(--crimson); text-align: right; flex: 1; }
+    .distribution-chart { height: clamp(400px, 50vh, 600px); width: 100%; background: var(--chart-bg-light); border-radius: 10px; border: 1px solid var(--border-light); position: relative; overflow: hidden; margin-bottom: 20px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04); }
+    body.dark .distribution-chart { background: var(--chart-bg-dark); border-color: var(--border-dark); box-shadow: inset 0 1px 3px rgba(255,255,255,0.02); }
+    #distribution-svg circle { transition: opacity 0.08s ease-out; cursor: pointer; }
+    .distribution-footer { display: flex; flex-direction: column; gap: clamp(18px, 2vw, 25px); margin-top: clamp(15px, 2vw, 20px);}
+    .legend { display: flex; justify-content: center; }
+    .legend-items { 
+      display: flex; align-items: center; gap: clamp(15px, 2vw, 20px); 
+      font-size: clamp(0.85rem, 1vw, 1rem); color: var(--text-secondary-light); 
+      font-weight: 600; padding: clamp(8px, 1vw, 12px) clamp(16px, 2vw, 24px);
+      background: var(--surface-light); border-radius: clamp(8px, 1vw, 12px);
+      border: 1px solid var(--border-light); 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    body.dark .legend-items { 
+      color: var(--text-secondary-dark); 
+      background: var(--surface-dark); 
+      border-color: var(--border-dark);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .legend-dot { 
+      width: clamp(10px, 1.2vw, 14px); height: clamp(10px, 1.2vw, 14px); 
+      border-radius: 50%; display: inline-block; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .legend-dot-blue { background-color: var(--navy); } 
+    .legend-dot-red { background-color: var(--crimson); }
+    .legend-dot-grey { background-color: var(--tie-grey-light); } 
+    body.dark .legend-dot-grey { background-color: var(--tie-grey-dark); }
+    .legend-separator { 
+      color: var(--text-secondary-light); margin: 0 clamp(6px, 0.8vw, 10px); 
+      opacity: 0.6;
+    } 
+    body.dark .legend-separator { color: var(--text-secondary-dark); }
+    .axis-title { 
+      text-align: center; font-size: clamp(0.8rem, 0.9vw, 1rem); 
+      color: var(--text-secondary-light); font-weight: 700; 
+      letter-spacing: 1px; text-transform: uppercase; 
+      background: var(--surface-light); padding: clamp(6px, 0.8vw, 10px) clamp(12px, 1.5vw, 18px);
+      border-radius: clamp(6px, 0.8vw, 10px); border: 1px solid var(--border-light);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: inline-block;
+    }
+    body.dark .axis-title { 
+      color: var(--text-secondary-dark); 
+      background: var(--surface-dark); 
+      border-color: var(--border-dark);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+
+    /* --- Popular Vote Aggregate Section --- */
+    .popular-vote-aggregate-section {
+      padding: clamp(40px, 5vw, 80px) 20px clamp(50px, 6vw, 90px);
+      background: var(--surface-light);
+      color: var(--text-primary-light);
+      border-top: 1px solid var(--border-light);
+      margin-top: 0;
+    }
+    body.dark .popular-vote-aggregate-section {
+      background: var(--surface-dark);
+      color: var(--text-primary-dark);
+      border-top-color: var(--border-dark);
+    }
+    .popular-vote-aggregate-header { text-align: center; margin-bottom: clamp(20px, 3vw, 40px); }
+    .popular-vote-aggregate-title { font-size: clamp(1.8rem, 3vw, 3.5rem); font-weight: 700; margin-bottom: clamp(8px, 1vw, 15px); color: var(--text-primary-light); }
+    body.dark .popular-vote-aggregate-title { color: var(--text-primary-dark); }
+    .popular-vote-aggregate-subtitle { font-size: clamp(1.1rem, 1.4vw, 1.6rem); color: var(--text-secondary-light); max-width: 1100px; margin: 0 auto 25px; line-height: 1.45; }
+    body.dark .popular-vote-aggregate-subtitle { color: var(--text-secondary-dark); }
+
+    .pv-chart-wrapper {
+      max-width: 1400px; margin: 0 auto;
+      background-color: var(--chart-bg-light);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: clamp(20px, 3vw, 50px) clamp(15px, 2vw, 40px) clamp(15px, 2vw, 25px) clamp(10px, 1vw, 15px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    body.dark .pv-chart-wrapper {
+      background-color: var(--chart-bg-dark);
+      border-color: var(--border-dark);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .pv-chart-display-area { display: flex; width: 100%; }
+    .pv-y-axis {
+      display: flex; flex-direction: column; justify-content: space-between;
+      font-size: clamp(0.8rem, 1vw, 1.1rem); color: var(--text-secondary-light);
+      text-align: right; padding-right: clamp(10px, 1.5vw, 18px); height: clamp(250px, 35vh, 450px);
+      box-sizing: border-box; white-space: nowrap; flex-shrink: 0; font-weight: 400;
+    }
+    body.dark .pv-y-axis { color: var(--text-secondary-dark); }
+    .pv-y-axis span:first-child { margin-top: -0.35em; }
+    .pv-y-axis span:last-child { margin-bottom: -0.35em; }
+
+    .pv-chart-plot-and-x-axis { flex-grow: 1; display: flex; flex-direction: column; min-width: 0;}
+    .pv-plot-area-container { flex-grow: 1; position: relative; }
+
+    #popular-vote-chart-svg { width: 100%; height: clamp(250px, 35vh, 450px); display: block; overflow: visible; }
+    #popular-vote-chart-svg .pv-grid-line { stroke: var(--border-light); stroke-width: 0.5; opacity: 0.4; }
+    body.dark #popular-vote-chart-svg .pv-grid-line { stroke: var(--border-dark); opacity: 0.3; }
+
+    #popular-vote-chart-svg .pv-confidence-band-mm { fill: var(--navy); opacity: 0.08; }
+    #popular-vote-chart-svg .pv-confidence-band-jr { fill: var(--crimson); opacity: 0.08; }
+    body.dark #popular-vote-chart-svg .pv-confidence-band-mm { opacity: 0.12; }
+    body.dark #popular-vote-chart-svg .pv-confidence-band-jr { opacity: 0.12; }
+
+    #popular-vote-chart-svg .pv-line-mm { stroke: var(--navy); stroke-width: 3.5; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+    #popular-vote-chart-svg .pv-line-jr { stroke: var(--crimson); stroke-width: 3.5; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+
+    #popular-vote-chart-svg .pv-end-point-circle { stroke-width: 1.5; r: 3.5px; }
+    #popular-vote-chart-svg .pv-end-point-circle.mm { fill: var(--navy); stroke: var(--chart-bg-light); }
+    #popular-vote-chart-svg .pv-end-point-circle.jr { fill: var(--crimson); stroke: var(--chart-bg-light); }
+    body.dark #popular-vote-chart-svg .pv-end-point-circle.mm { stroke: var(--chart-bg-dark); }
+    body.dark #popular-vote-chart-svg .pv-end-point-circle.jr { stroke: var(--chart-bg-dark); }
+
+    #popular-vote-chart-svg .pv-end-point-label { font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 600; text-anchor: start; }
+    #popular-vote-chart-svg .pv-end-point-label.mm { fill: var(--navy); }
+    #popular-vote-chart-svg .pv-end-point-label.jr { fill: var(--crimson); }
+
+    #popular-vote-chart-svg .pv-hover-tracker-line { stroke: var(--text-secondary-light); stroke-width: 1px; stroke-dasharray: 3,2; opacity: 0.7; pointer-events: none; }
+    body.dark #popular-vote-chart-svg .pv-hover-tracker-line { stroke: var(--text-secondary-dark); }
+    #popular-vote-chart-svg .pv-hover-circle { stroke-width: 1.5; r: 3.5px; pointer-events: none; }
+    #popular-vote-chart-svg .pv-hover-circle.mm { fill: var(--navy); stroke: var(--chart-bg-light); }
+    #popular-vote-chart-svg .pv-hover-circle.jr { fill: var(--crimson); stroke: var(--chart-bg-light); }
+    body.dark #popular-vote-chart-svg .pv-hover-circle.mm { stroke: var(--chart-bg-dark); }
+    body.dark #popular-vote-chart-svg .pv-hover-circle.jr { stroke: var(--chart-bg-dark); }
+    #popular-vote-chart-svg .pv-hover-overlay-rect { fill: transparent; cursor: crosshair; }
+
+    .pv-x-axis { display: flex; justify-content: space-between; font-size: clamp(0.8rem, 1vw, 1.1rem); color: var(--text-secondary-light); padding-top: clamp(8px, 1vw, 12px); font-weight: 400; }
+    body.dark .pv-x-axis { color: var(--text-secondary-dark); }
+    .pv-x-axis span { flex-basis: 0; flex-grow: 1; text-align: center; white-space: nowrap; }
+    .pv-x-axis span:first-child { text-align: left; transform: translateX(-25%);}
+    .pv-x-axis span:last-child { text-align: right; transform: translateX(25%);}
+
+    .pv-legend-current-values { display: flex; justify-content: center; align-items: center; gap: clamp(20px, 3vw, 40px); margin-top: clamp(20px, 2.5vw, 35px); font-size: clamp(1rem, 1.3vw, 1.4rem); }
+    .pv-legend-current-values .legend-item { display: flex; align-items: center; color: var(--text-primary-light); }
+    body.dark .pv-legend-current-values .legend-item { color: var(--text-primary-dark); }
+    .pv-legend-current-values .legend-color { width: clamp(12px, 1.5vw, 18px); height: clamp(12px, 1.5vw, 18px); border-radius: 3px; margin-right: clamp(6px, 0.8vw, 10px); display: inline-block; }
+    .pv-legend-current-values .legend-color.mm { background-color: var(--navy); }
+    .pv-legend-current-values .legend-color.jr { background-color: var(--crimson); }
+    .pv-legend-current-values strong { font-weight: 600; }
+
+    /* Clean Tooltip for PV Chart Hover - Enhanced */
+    .tooltip-pv-content { 
+      background: transparent; 
+      border: none; 
+      box-shadow: none;
+      padding: 0;
+      min-width: clamp(200px, 20vw, 280px);
+    }
+    .tooltip-pv-content .header { 
+      font-weight: 700; 
+      font-size: clamp(0.9rem, 1.1vw, 1.1rem); 
+      margin-bottom: clamp(8px, 1vw, 12px); 
+      padding: clamp(10px, 1.2vw, 16px) clamp(14px, 1.5vw, 20px);
+      background: var(--tooltip-bg-light);
+      border-radius: clamp(8px, 1vw, 12px);
+      box-shadow: 0 4px 16px var(--tooltip-shadow-light);
+      text-align: center;
+      border: 1px solid var(--border-light);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    body.dark .tooltip-pv-content .header { 
+      background: var(--tooltip-bg-dark);
+      box-shadow: 0 4px 16px var(--tooltip-shadow-dark);
+      border-color: var(--border-dark);
+    }
+    .tooltip-pv-content .pv-item { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: baseline; 
+      font-size: clamp(0.85rem, 1vw, 1rem); 
+      margin-bottom: clamp(4px, 0.5vw, 6px);
+      padding: clamp(6px, 0.8vw, 10px) clamp(10px, 1.2vw, 16px);
+      background: var(--tooltip-bg-light);
+      border-radius: clamp(6px, 0.8vw, 10px);
+      box-shadow: 0 2px 8px var(--tooltip-shadow-light);
+      border: 1px solid var(--border-light);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      transition: all 0.2s ease;
+    }
+    body.dark .tooltip-pv-content .pv-item {
+      background: var(--tooltip-bg-dark);
+      box-shadow: 0 2px 8px var(--tooltip-shadow-dark);
+      border-color: var(--border-dark);
+    }
+    .tooltip-pv-content .pv-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--tooltip-shadow-light);
+    }
+    body.dark .tooltip-pv-content .pv-item:hover {
+      box-shadow: 0 4px 12px var(--tooltip-shadow-dark);
+    }
+    .tooltip-pv-content .pv-item .candidate { font-weight: 700; min-width: clamp(100px, 12vw, 130px); }
+    .tooltip-pv-content .pv-item .value { font-family: 'Source Code Pro', monospace; font-weight: 600; text-align: right; min-width: clamp(45px, 5vw, 60px); }
+    .tooltip-pv-content .pv-item .ci-range { font-size: clamp(0.75rem, 0.9vw, 0.9rem); color: var(--text-secondary-light); margin-left: clamp(6px, 0.8vw, 10px); text-align: right; min-width: clamp(75px, 8vw, 95px);}
+    body.dark .tooltip-pv-content .pv-item .ci-range { color: var(--text-secondary-dark); }
+    .tooltip-pv-content .pv-item.mm .candidate { color: var(--navy); }
+    .tooltip-pv-content .pv-item.jr .candidate { color: var(--crimson); }
+    .tooltip-pv-content .pv-item.net-lead .candidate { font-weight: 600; color: var(--text-secondary-light); }
+    body.dark .tooltip-pv-content .pv-item.net-lead .candidate { color: var(--text-secondary-dark); }
+    .tooltip-pv-content .pv-item.net-lead .value { font-weight: 700; }
+
+
+    /* Universal Tooltip (for map, dot plot, snake chart HOVER) - Enhanced */
+    .tooltip {
+      position: fixed; background: var(--tooltip-bg-light); color: var(--text-primary-light);
+      padding: clamp(12px, 1.5vw, 18px) clamp(16px, 2vw, 24px); border-radius: clamp(8px, 1vw, 12px); 
+      font-size: clamp(0.85rem, 1vw, 1rem); font-weight: 500;
+      pointer-events: none; opacity: 0; transform: translate(-50%, -12px);
+      transition: opacity 0.15s ease, transform 0.15s ease; z-index: 10000;
+      box-shadow: 0 6px 20px var(--tooltip-shadow-light); line-height: 1.5; text-align: left;
+      min-width: clamp(200px, 20vw, 280px); border: 1px solid var(--border-light);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); left: 0; top: 0;
+    }
+    body.dark .tooltip { background: var(--tooltip-bg-dark); color: var(--text-primary-dark); border: 1px solid var(--border-dark); box-shadow: 0 6px 20px var(--tooltip-shadow-dark); }
+    .tooltip.visible { opacity: 1; transform: translate(-50%, -8px); }
+    .tooltip-dotplot-content .header { font-weight: 700; margin-bottom: clamp(6px, 0.8vw, 10px); font-size: clamp(0.9rem, 1.1vw, 1.1rem); text-align:center;}
+    .tooltip-dotplot-content .ev-split { font-family: 'Source Code Pro', monospace; font-size: clamp(0.85rem, 1vw, 1rem); text-align:center; font-weight: 600;}
+    .tooltip-map-state-content .state-info, .tooltip-snake-state-content .tooltip-header { font-size: clamp(1rem, 1.2vw, 1.2rem); font-weight: 700; margin-bottom: clamp(10px, 1.2vw, 14px); padding-bottom: clamp(10px, 1.2vw, 14px); border-bottom: 1px solid var(--border-light); }
+    body.dark .tooltip-map-state-content .state-info, body.dark .tooltip-snake-state-content .tooltip-header { border-bottom-color: var(--border-dark); }
+    .tooltip-map-state-content .prob-heading { font-size: clamp(0.8rem, 1vw, 1rem); font-weight: 600; color: var(--text-secondary-light); margin-bottom: clamp(8px, 1vw, 12px); text-transform: uppercase; letter-spacing: 0.5px; }
+    body.dark .tooltip-map-state-content .prob-heading { color: var(--text-secondary-dark); }
+    .tooltip-map-state-content .prob-item, .tooltip-snake-state-content .tooltip-row { display: flex; justify-content: space-between; align-items: center; font-size: clamp(0.9rem, 1.1vw, 1.1rem); margin-bottom: clamp(6px, 0.8vw, 10px); }
+    .tooltip-map-state-content .prob-item .candidate, .tooltip-snake-state-content .tooltip-row .candidate { font-weight: 600; }
+    .tooltip-map-state-content .prob-item .prob, .tooltip-snake-state-content .tooltip-row .prob { font-weight: 600; font-family: 'Source Code Pro', monospace; }
+    .tooltip-map-state-content .prob-item .jr, .tooltip-snake-state-content .tooltip-row .jr { color: var(--crimson); }
+    .tooltip-map-state-content .prob-item .moderateMonicka, .tooltip-snake-state-content .tooltip-row .moderateMonicka { color: var(--navy); }
+    .tooltip-map-state-content .prob-item .other { color: var(--text-secondary-light); } body.dark .tooltip-map-state-content .prob-item .other { color: var(--text-secondary-dark); }
+    .tooltip-map-state-content .margin-info, .tooltip-snake-state-content .tooltip-margin { font-size: clamp(0.8rem, 1vw, 1rem); margin-top: clamp(12px, 1.5vw, 16px); padding-top: clamp(12px, 1.5vw, 16px); border-top: 1px solid var(--border-light); color: var(--text-secondary-light); }
+    body.dark .tooltip-map-state-content .margin-info, body.dark .tooltip-snake-state-content .tooltip-margin { border-top-color: var(--border-dark); color: var(--text-secondary-dark); }
+    .tooltip-map-state-content .margin-value { font-weight: 600; color: var(--text-primary-light); } body.dark .tooltip-map-state-content .margin-value { color: var(--text-primary-dark); }
+    .tooltip-map-state-content .margin-value.jr { color: var(--crimson); } .tooltip-map-state-content .margin-value.moderateMonicka { color: var(--navy); }
+    .tooltip-map-state-content .margin-value.tossup { color: var(--tie-grey-light); } body.dark .tooltip-map-state-content .margin-value.tossup { color: var(--tie-grey-dark); }
+
+    /* Electoral SVG Map Section */
+    .electoral-map-section { padding: clamp(60px, 6vw, 100px) 20px; text-align: center; background: var(--bg-light); border-top: 1px solid var(--border-light); }
+    body.dark .electoral-map-section { background: var(--bg-dark); border-top-color: var(--border-dark); }
+    .map-section-title { font-size: clamp(2.2rem, 3.5vw, 4rem); font-weight: 700; color: var(--text-primary-light); margin-bottom: clamp(15px, 2vw, 25px); }
+    body.dark .map-section-title { color: var(--text-primary-dark); }
+    .map-section-subtitle { font-size: clamp(1.2rem, 1.6vw, 1.8rem); color: var(--text-secondary-light); margin-bottom: clamp(35px, 4vw, 50px); max-width: 1100px; margin-left: auto; margin-right: auto; }
+    body.dark .map-section-subtitle { color: var(--text-secondary-dark); }
+    .map-svg-wrapper { width: 100%; max-width: 1600px; margin: 0 auto; background-color: var(--chart-bg-light); border-radius: 15px; border: 1px solid var(--border-light); padding: clamp(20px, 3vw, 50px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    body.dark .map-svg-wrapper { background-color: var(--chart-bg-dark); border-color: var(--border-dark); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    #electoral-map-svg { width: 100%; height: auto; display: block; }
+    #electoral-map-svg .map-state { stroke: var(--map-stroke-light); stroke-width: 0.75; transition: opacity 0.1s ease-out, fill 0.2s ease-out; cursor: pointer; }
+    body.dark #electoral-map-svg .map-state { stroke: var(--map-stroke-dark); }
+    #electoral-map-svg .map-state:hover { opacity: var(--map-hover-opacity); }
+    .map-state.solid-r { fill: var(--solid-r-color); } .map-state.solid-b { fill: var(--solid-b-color); }
+    .map-state.likely-r.light-mode { fill: var(--likely-r-color-light); } .map-state.likely-r.dark-mode { fill: var(--likely-r-color-dark); }
+    .map-state.likely-b.light-mode { fill: var(--likely-b-color-light); } .map-state.likely-b.dark-mode { fill: var(--likely-b-color-dark); }
+    .map-state.lean-r.light-mode { fill: var(--lean-r-color-light); } .map-state.lean-r.dark-mode { fill: var(--lean-r-color-dark); }
+    .map-state.lean-b.light-mode { fill: var(--lean-b-color-light); } .map-state.lean-b.dark-mode { fill: var(--lean-b-color-dark); }
+    .map-state.tossup.light-mode { fill: var(--tossup-color-light); } .map-state.tossup.dark-mode { fill: var(--tossup-color-dark); }
+    .map-state.default-fill { fill: var(--map-default-fill-light); } body.dark .map-state.default-fill { fill: var(--map-default-fill-dark); }
+    .map-legend-container { margin-top: clamp(30px, 3vw, 45px); display: flex; justify-content: center; flex-wrap: wrap; gap: clamp(12px, 1.5vw, 20px) clamp(18px, 2vw, 30px);}
+    .map-legend-item { display: flex; align-items: center; font-size: clamp(0.9rem, 1.1vw, 1.2rem); color: var(--text-secondary-light);}
+    body.dark .map-legend-item { color: var(--text-secondary-dark);}
+    .map-legend-color-box { width: clamp(16px, 1.8vw, 22px); height: clamp(16px, 1.8vw, 22px); margin-right: clamp(8px, 1vw, 12px); border-radius: 4px;}
+
+    /* Responsive */
+    @media (min-width: 1600px) {
+      .main-content-area { padding: 80px 20px 100px; }
+      .popular-vote-aggregate-section { padding: 80px 20px 90px; }
+      .electoral-map-section { padding: 100px 20px; }
+      .snake-chart-section { padding: 100px 20px 120px; }
+      .distribution-chart { height: 700px; }
+      .pv-chart-wrapper { padding: 50px 40px 25px 15px; }
+      #popular-vote-chart-svg { height: 450px; }
+      .pv-y-axis { height: 450px; font-size: 1.1rem; padding-right: 18px;}
+      .map-svg-wrapper { padding: 50px; }
+    }
+    
+    @media (min-width: 1400px) {
+      .main-content-area { padding: 70px 20px 90px; }
+      .popular-vote-aggregate-section { padding: 70px 20px 80px; }
+      .electoral-map-section { padding: 90px 20px; }
+      .snake-chart-section { padding: 90px 20px 110px; }
+      .distribution-chart { height: 650px; }
+      .pv-chart-wrapper { padding: 40px 35px 20px 12px; }
+      #popular-vote-chart-svg { height: 400px; }
+      .pv-y-axis { height: 400px; font-size: 1rem; padding-right: 15px;}
+      .map-svg-wrapper { padding: 40px; }
+    }
+    
+    @media (max-width: 768px) {
+      .theme-toggle { top: 15px; }
+      .main-content-area { padding: 30px 15px 50px; }
+      .main-headline { font-size: clamp(1.8rem, 7vw, 2.5rem); }
+      .distribution-chart { height: 350px; }
+      .popular-vote-aggregate-section { padding: 30px 15px 40px; }
+      .popular-vote-aggregate-title { font-size: 1.6rem; }
+      .popular-vote-aggregate-subtitle {font-size: 1rem;}
+      .pv-chart-wrapper { padding: 15px 10px 10px 5px;}
+      #popular-vote-chart-svg { height: 200px; }
+      .pv-y-axis { height: 200px; font-size: 0.7rem; padding-right: 6px;}
+      .pv-x-axis { font-size: 0.7rem; }
+      .pv-legend-current-values { font-size: 0.9rem; gap: 12px;}
+      .electoral-map-section { padding: 50px 15px; }
+      .map-section-title { font-size: 1.8rem; } .map-section-subtitle { font-size: 1.1rem; }
+      .map-svg-wrapper { padding: 15px; }
+    }
+    @media (max-width: 480px) {
+      .main-content-area { padding: 20px 15px 40px; }
+      .distribution-chart { height: 300px; }
+      .popular-vote-aggregate-section { padding: 20px 10px 30px; }
+      .popular-vote-aggregate-title { font-size: 1.4rem; }
+      #popular-vote-chart-svg { height: 180px; }
+      .pv-y-axis { height: 180px; }
+      .pv-legend-current-values { flex-direction: column; gap: 8px;}
+      .electoral-map-section { padding: 40px 15px; }
+      .map-svg-wrapper { padding: 8px; }
+      .map-legend-container { display: none; }
+    }
+  </style>
+
+  <!-- SNAKE CHART CSS -->
+  <style>
+    :root {
+        --snake-solid-d: #4a7fc7; --snake-likely-d: #6fa3db; --snake-lean-d: #a6c8f0;
+        --snake-tossup: #e0d5f0; --snake-lean-r: #f5b5b5; --snake-likely-r: #f09999;
+        --snake-solid-r: #e57373;
+        --s-text-primary-light: #1a1a1a; --s-text-secondary-light: #666666;
+        --s-bg-light-mode: #f8f9fa; --s-surface-light-mode: #ffffff; --s-border-light-mode: #e0e0e0;
+    }
+    body.dark {
+        --snake-solid-d: #5f8dd3; --snake-likely-d: #7da7e3; --snake-lean-d: #a5c5f0;
+        --snake-tossup: #c5b8d8; --snake-lean-r: #f5a5a5; --snake-likely-r: #f08888;
+        --snake-solid-r: #e56b6b;
+        --s-text-primary-dark: #e0e0e0; --s-text-secondary-dark: #b0b0b0;
+        --s-bg-dark-mode: #0a0a0a; --s-surface-dark-mode: #1a1a1a; --s-border-dark-mode: #2c2c2c;
+    }
+    .snake-chart-section {
+        padding: clamp(50px, 5vw, 80px) 20px clamp(60px, 6vw, 100px); background: var(--s-bg-light-mode); color: var(--s-text-primary-light);
+        font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease;
+        border-top: 1px solid var(--s-border-light-mode);
+    }
+    body.dark .snake-chart-section {
+        background: var(--s-bg-dark-mode); color: var(--s-text-primary-dark);
+        border-top: 1px solid var(--s-border-dark-mode);
+    }
+    .snake-chart-section * { box-sizing: border-box; }
+    .snake-chart-header { text-align: center; margin-bottom: 20px; }
+    .snake-chart-title { font-size: clamp(1.8rem, 2.5vw, 3rem); font-weight: 700; margin-bottom: 10px; color: var(--s-text-primary-light); }
+    body.dark .snake-chart-title { color: var(--s-text-primary-dark); }
+    .snake-chart-subtitle { font-size: clamp(1.05rem, 1.3vw, 1.5rem); color: var(--s-text-secondary-light); max-width: 900px; margin: 0 auto 25px; line-height: 1.5; }
+    body.dark .snake-chart-subtitle { color: var(--s-text-secondary-dark); }
+    .chart-controls { display: none; }
+    .snake-chart-wrapper {
+        position: relative; width: 100%; max-width: 1600px; margin: 0 auto; overflow-x: auto; overflow-y: hidden; padding: clamp(20px, 2.5vw, 35px) 0;
+        background: var(--s-surface-light-mode); border: 1px solid var(--s-border-light-mode); border-radius: 12px;
+    }
+    body.dark .snake-chart-wrapper { background: var(--s-surface-dark-mode); border: 1px solid var(--s-border-dark-mode); }
+    #snake-chart-svg { display: block; min-width: 2600px; height: clamp(500px, 60vh, 700px); }
+    .snake-base-path { fill: none; stroke: #e8e8e8; stroke-width: 44; stroke-linecap: round; stroke-linejoin: round; }
+    body.dark .snake-base-path { stroke: #2a2a2a; }
+    .state-segment { fill: none; stroke-width: 42; stroke-linecap: butt; transition: opacity 0.2s ease; cursor: pointer; }
+    .state-segment:hover { opacity: 0.8; }
+    .state-segment.solid-d { stroke: var(--snake-solid-d); } .state-segment.likely-d { stroke: var(--snake-likely-d); }
+    .state-segment.lean-d { stroke: var(--snake-lean-d); } .state-segment.tossup { stroke: var(--snake-tossup); }
+    .state-segment.lean-r { stroke: var(--snake-lean-r); } .state-segment.likely-r { stroke: var(--snake-likely-r); }
+    .state-segment.solid-r { stroke: var(--snake-solid-r); }
+    .pa-outline { fill: none; stroke: #333; stroke-width: 46; stroke-linecap: butt; opacity: 0.6; }
+    body.dark .pa-outline { stroke: #ccc; opacity: 0.4; }
+    .state-text { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; pointer-events: none; fill: #333; }
+    body.dark .state-text { fill: #e0e0e0; } .state-text.on-dark { fill: white; }
+    .state-separator { stroke: white; stroke-width: 3; pointer-events: none; opacity: 0.9; }
+    body.dark .state-separator { stroke: var(--s-surface-dark-mode); }
+    .ev270-marker-line { stroke: #333; stroke-width: 2.5; stroke-dasharray: 6, 3; }
+    body.dark .ev270-marker-line { stroke: #ccc; }
+    .ev270-marker-text { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; fill: var(--s-text-primary-light); text-anchor: middle; }
+    body.dark .ev270-marker-text { fill: var(--s-text-primary-dark); }
+    #universal-tooltip .tooltip-header { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--s-border-light-mode); }
+    body.dark #universal-tooltip .tooltip-header { border-bottom-color: var(--s-border-dark-mode); }
+    #universal-tooltip .tooltip-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; margin-bottom: 4px; }
+    #universal-tooltip .tooltip-row .candidate { font-weight: 600; } #universal-tooltip .tooltip-row .prob { font-weight: 600; }
+    #universal-tooltip .tooltip-row .jr { color: var(--crimson); } #universal-tooltip .tooltip-row .moderateMonicka { color: var(--navy); }
+    #universal-tooltip .tooltip-margin { font-size: 0.8rem; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--s-border-light-mode); color: var(--s-text-secondary-light); }
+    body.dark #universal-tooltip .tooltip-margin { border-top-color: var(--s-border-dark-mode); color: var(--s-text-secondary-dark); }
+    .snake-scroll-hint { position: absolute; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--s-text-secondary-light); font-weight: 500; z-index: 100;}
+    body.dark .snake-scroll-hint { color: var(--s-text-secondary-dark); }
+    .zoom-btn { background: var(--s-surface-light-mode); border: 2px solid var(--s-border-light-mode); padding: clamp(10px, 1.2vw, 16px) clamp(20px, 2.5vw, 30px); border-radius: clamp(6px, 0.8vw, 10px); font-size: clamp(0.85rem, 1vw, 1.1rem); font-weight: 600; color: var(--s-text-primary-light); cursor: pointer; transition: all 0.2s ease; }
+    body.dark .zoom-btn { background: var(--s-surface-dark-mode); border-color: var(--s-border-dark-mode); color: var(--s-text-primary-dark); }
+    .zoom-btn:hover { background: var(--s-border-light-mode); transform: translateY(-1px); }
+    body.dark .zoom-btn:hover { background: var(--s-border-dark-mode); }
+    @media (max-width: 768px) {
+        .snake-scroll-hint, .zoom-btn, .chart-controls { display: none; } .snake-chart-section { padding: 40px 15px 50px; }
+        .snake-chart-title { font-size: 1.5rem; } .snake-chart-subtitle { font-size: 0.9rem; } .snake-chart-wrapper { max-width: 100%; }
+    }
+    @media (max-width: 480px) {
+        .snake-chart-section { padding: 30px 10px 40px; }
+        .snake-chart-section div[style*="linear-gradient"] { width: 100% !important; max-width: 300px !important;}
+        .snake-chart-section div[style*="linear-gradient"] + div { font-size: 0.65rem !important; }
+    }
+  </style>
+</head>
+
+<body class="dark">
+  <div class="theme-toggle">
+    <button class="theme-btn active" id="theme-toggle-btn"><i class="fas fa-sun"></i></button>
+  </div>
+
+  <header class="page-header">
+    <nav class="nav">
+        <div class="nav-content">
+            <div class="nav-left">
+              <div class="logo">AP</div>
+              <div class="nav-links">
+                <a href="#" class="nav-link active">President</a>
+                <a href="#" class="nav-link">House</a>
+              </div>
+            </div>
+            <div class="nav-right"><span class="nav-dropdown">Latest articles ▼</span></div>
+          </div>
+    </nav>
+    <div class="main-content-area">
+        <div class="timestamp">UPDATED OCT 20TH, 2048, AT 5:54 PM EST</div>
+        <h1 class="main-headline">Who Is Favored To Win The 2048 Presidential Election?</h1>
+        <p class="main-subtitle">The Associated Press uses polling, economic and demographic data to explore likely election outcomes.</p>
+
+        <div class="win-probabilities">
+          <div class="prob-line prob-moderateMonicka"><span class="candidate-name">ModerateMonicka</span> <span class="win-text">wins</span> <span class="win-number">55</span> <span class="times-text">times out of 100</span></div>
+          <div class="simulation-text">in our simulations of the 2048 presidential election.</div>
+          <div class="prob-line prob-jr"><span class="candidate-name">JR</span> <span class="win-text">wins</span> <span class="win-number">44</span> <span class="times-text">times out of 100.</span></div>
+          <div class="tie-probability">An exact 269-269 Electoral College tie occurs in 1% of simulations.</div>
+        </div>
+
+        <div class="simulation-summary">
+          <div class="sim-graphic">📊</div>
+          <div class="sim-stats">
+            <div class="sim-line"><span class="candidate moderateMonicka">ModerateMonicka simulations</span> <span class="sim-count">22000</span></div>
+            <div class="sim-line"><span class="candidate jr">JR simulations</span> <span class="sim-count">17600</span></div>
+            <div class="sim-line"><span class="no-winner">Tie (269-269)</span> <span class="sim-count">400</span></div>
+            <div class="sim-total">40,000 simulations represented</div>
+          </div>
+        </div>
+
+        <div class="distribution-container">
+          <div class="distribution-header">
+            <div class="distribution-title">Electoral Vote Simulation Results</div>
+            <div class="distribution-subtitle">Each dot represents one possible election outcome from our model</div>
+          </div>
+          <div class="distribution-labels">
+            <span class="label-left">ModerateMonicka wins</span>
+            <span class="label-center">269-269 Tie</span>
+            <span class="label-right">JR wins</span>
+          </div>
+          <div class="distribution-chart">
+            <svg id="distribution-svg" width="100%" height="100%" viewBox="0 0 900 400" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+          <div class="distribution-footer">
+            <div class="legend">
+              <div class="legend-items">
+                <span class="legend-dot legend-dot-blue"></span> ModerateMonicka Victory
+                <span class="legend-dot legend-dot-grey"></span> 269-269 Tie
+                <span class="legend-dot legend-dot-red"></span> JR Victory
+                <span class="legend-separator">•</span>
+                <span>~1,500 outcomes shown</span>
+              </div>
+            </div>
+            <div class="axis-title">ELECTORAL VOTE MARGIN (JR - MODERATEMONICKA)</div>
+          </div>
+        </div>
+    </div>
+  </header>
+
+  <!-- POPULAR VOTE AGGREGATE SECTION -->
+  <section class="popular-vote-aggregate-section">
+    <div class="popular-vote-aggregate-header">
+      <h2 class="popular-vote-aggregate-title">National Popular Vote Trend</h2>
+      <p class="popular-vote-aggregate-subtitle">Estimated daily national popular vote share and 95% confidence intervals since June 1st, 2048. Hover over the chart for daily details.</p>
+    </div>
+    <div class="pv-chart-wrapper">
+      <div class="pv-chart-display-area">
+        <div class="pv-y-axis" id="pv-y-axis-labels">
+          {/* Y-axis labels will be generated by JS */}
+        </div>
+        <div class="pv-chart-plot-and-x-axis">
+          <div class="pv-plot-area-container">
+            <svg id="popular-vote-chart-svg" viewBox="0 0 600 220" preserveAspectRatio="none">
+              {/* Grid lines, paths, circles, text will be generated by JS */}
+            </svg>
+          </div>
+          <div class="pv-x-axis" id="pv-x-axis-labels">
+            {/* X-axis labels will be generated by JS */}
+          </div>
+        </div>
+      </div>
+      <div class="pv-legend-current-values">
+          <div class="legend-item">
+              <span class="legend-color mm"></span>ModerateMonicka: <strong id="pv-mm-current-value">--%</strong>
+          </div>
+          <div class="legend-item">
+              <span class="legend-color jr"></span>JR: <strong id="pv-jr-current-value">--%</strong>
+          </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="electoral-map-section">
+    <h2 class="map-section-title">Electoral Map Forecast</h2>
+    <p class="map-section-subtitle">A state-by-state breakdown of the race for 270 electoral votes. Hover over a state for current forecast.</p>
+    <div class="map-svg-wrapper">
+        <svg id="electoral-map-svg" viewBox="0 0 959 593">
+            {/* Simplified blocky state placeholders */}
+            <rect id="AL" data-name="Alabama" x="600" y="350" width="50" height="40" class="map-state"/>
+            <rect id="AK" data-name="Alaska" x="50" y="450" width="40" height="30" class="map-state"/>
+            <rect id="AZ" data-name="Arizona" x="180" y="300" width="50" height="45" class="map-state"/>
+            <rect id="AR" data-name="Arkansas" x="500" y="300" width="45" height="35" class="map-state"/>
+            <rect id="CA" data-name="California" x="50" y="150" width="80" height="150" class="map-state"/>
+            <rect id="CO" data-name="Colorado" x="300" y="200" width="50" height="40" class="map-state"/>
+            <rect id="CT" data-name="Connecticut" x="850" y="100" width="30" height="20" class="map-state"/>
+            <rect id="DE" data-name="Delaware" x="840" y="150" width="20" height="30" class="map-state"/>
+            <rect id="DC" data-name="D.C." x="830" y="185" width="10" height="10" class="map-state"/>
+            <rect id="FL" data-name="Florida" x="700" y="400" width="80" height="100" class="map-state"/>
+            <rect id="GA" data-name="Georgia" x="680" y="300" width="50" height="45" class="map-state"/>
+            <rect id="HI" data-name="Hawaii" x="0" y="500" width="30" height="20" class="map-state"/>
+            <rect id="ID" data-name="Idaho" x="200" y="50" width="40" height="60" class="map-state"/>
+            <rect id="IL" data-name="Illinois" x="550" y="150" width="50" height="70" class="map-state"/>
+            <rect id="IN" data-name="Indiana" x="600" y="170" width="45" height="55" class="map-state"/>
+            <rect id="IA" data-name="Iowa" x="500" y="150" width="50" height="40" class="map-state"/>
+            <rect id="KS" data-name="Kansas" x="400" y="250" width="60" height="40" class="map-state"/>
+            <rect id="KY" data-name="Kentucky" x="600" y="230" width="50" height="35" class="map-state"/>
+            <rect id="LA" data-name="Louisiana" x="500" y="380" width="50" height="40" class="map-state"/>
+            <rect id="ME" data-name="Maine At Large" x="850" y="0" width="50" height="50" class="map-state"/>
+            <rect id="MD" data-name="Maryland" x="800" y="150" width="40" height="30" class="map-state"/>
+            <rect id="MA" data-name="Massachusetts" x="870" y="70" width="40" height="30" class="map-state"/>
+            <rect id="MI" data-name="Michigan" x="650" y="50" width="60" height="80" class="map-state"/>
+            <rect id="MN" data-name="Minnesota" x="480" y="50" width="60" height="70" class="map-state"/>
+            <rect id="MS" data-name="Mississippi" x="550" y="350" width="45" height="40" class="map-state"/>
+            <rect id="MO" data-name="Missouri" x="500" y="220" width="55" height="50" class="map-state"/>
+            <rect id="MT" data-name="Montana" x="280" y="50" width="70" height="50" class="map-state"/>
+            <rect id="NE" data-name="Nebraska At Large" x="400" y="150" width="60" height="40" class="map-state"/>
+            <rect id="NV" data-name="Nevada" x="150" y="200" width="40" height="70" class="map-state"/>
+            <rect id="NH" data-name="New Hampshire" x="830" y="50" width="30" height="30" class="map-state"/>
+            <rect id="NJ" data-name="New Jersey" x="830" y="120" width="30" height="35" class="map-state"/>
+            <rect id="NM" data-name="New Mexico" x="280" y="300" width="50" height="50" class="map-state"/>
+            <rect id="NY" data-name="New York" x="780" y="50" width="60" height="70" class="map-state"/>
+            <rect id="NC" data-name="North Carolina" x="750" y="250" width="60" height="40" class="map-state"/>
+            <rect id="ND" data-name="North Dakota" x="400" y="50" width="50" height="40" class="map-state"/>
+            <rect id="OH" data-name="Ohio" x="680" y="150" width="50" height="50" class="map-state"/>
+            <rect id="OK" data-name="Oklahoma" x="400" y="300" width="60" height="40" class="map-state"/>
+            <rect id="OR" data-name="Oregon" x="100" y="50" width="50" height="70" class="map-state"/>
+            <rect id="PA" data-name="Pennsylvania" x="750" y="120" width="50" height="40" class="map-state"/>
+            <rect id="RI" data-name="Rhode Island" x="880" y="100" width="15" height="15" class="map-state"/>
+            <rect id="SC" data-name="South Carolina" x="720" y="290" width="40" height="35" class="map-state"/>
+            <rect id="SD" data-name="South Dakota" x="400" y="100" width="50" height="40" class="map-state"/>
+            <rect id="TN" data-name="Tennessee" x="600" y="270" width="60" height="35" class="map-state"/>
+            <rect id="TX" data-name="Texas" x="350" y="350" width="120" height="100" class="map-state"/>
+            <rect id="UT" data-name="Utah" x="250" y="200" width="40" height="50" class="map-state"/>
+            <rect id="VT" data-name="Vermont" x="800" y="30" width="25" height="40" class="map-state"/>
+            <rect id="VA" data-name="Virginia" x="750" y="190" width="50" height="50" class="map-state"/>
+            <rect id="WA" data-name="Washington" x="120" y="0" width="60" height="50" class="map-state"/>
+            <rect id="WV" data-name="West Virginia" x="720" y="190" width="40" height="30" class="map-state"/>
+            <rect id="WI" data-name="Wisconsin" x="550" y="70" width="50" height="60" class="map-state"/>
+            <rect id="WY" data-name="Wyoming" x="300" y="120" width="50" height="40" class="map-state"/>
+        </svg>
+    </div>
+    <div class="map-legend-container" id="map-legend-content">
+        <!-- Legend will be built by JS -->
+    </div>
+  </section>
+
+  <!-- SNAKE CHART HTML SECTION -->
+  <section class="snake-chart-section">
+    <div class="snake-chart-header">
+        <h2 class="snake-chart-title">Path to Victory</h2>
+        <p class="snake-chart-subtitle"> Our "snake" chart orders the states by forecasted margin of victory. Scroll to explore the full electoral landscape. </p>
+    </div>
+    <div style="text-align: center; margin-bottom: clamp(30px, 4vw, 50px); margin-top: clamp(25px, 3vw, 40px);">
+        <div style="font-size: clamp(0.75rem, 1vw, 1rem); font-weight: 600; color: var(--s-text-secondary-light); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: clamp(20px, 2.5vw, 30px);"> HOVER OVER A STATE TO SEE ITS FORECAST </div>
+        <div style="display: inline-block; position: relative;">
+            <div style="background: linear-gradient(to right, var(--snake-solid-d) 0%, var(--snake-likely-d) 20%, var(--snake-lean-d) 40%, var(--snake-tossup) 50%, var(--snake-lean-r) 60%, var(--snake-likely-r) 80%, var(--snake-solid-r) 100%); width: clamp(400px, 60vw, 800px); height: clamp(25px, 3.5vw, 40px); border-radius: clamp(6px, 0.8vw, 10px); box-shadow: 0 3px 8px rgba(0,0,0,0.12);"></div>
+            <div style="display: flex; justify-content: space-between; margin-top: clamp(8px, 1vw, 12px); font-size: clamp(0.7rem, 0.9vw, 1rem); font-weight: 600; color: var(--s-text-secondary-light);">
+                <span>MM+30</span><span>MM+15</span><span>MM+5</span>
+                <span style="font-weight: 700; color: var(--s-text-primary-light);">Toss-up</span>
+                <span>JR+5</span><span>JR+15</span><span>JR+30</span>
+            </div>
+        </div>
+    </div>
+    <div class="snake-chart-wrapper">
+        <div class="snake-scroll-hint" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--s-text-secondary-light); font-weight: 500; z-index: 100;"> ← Scroll to see ModerateMonicka landslides </div>
+        <div class="snake-scroll-hint" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--s-text-secondary-light); font-weight: 500; z-index: 100;"> Scroll to see JR landslides → </div>
+        <svg id="snake-chart-svg" viewBox="0 0 2600 500" preserveAspectRatio="none">
+            <defs><path id="snake-path-def" d="" /></defs>
+            <path class="snake-base-path" id="snake-base-path" />
+            <g id="snake-state-segments"></g> <g id="snake-state-separators"></g> <g id="snake-state-labels"></g> <g id="ev-270-marker"></g>
+        </svg>
+    </div>
+    <div style="text-align: center; margin-top: clamp(20px, 2.5vw, 35px);">
+        <button class="zoom-btn" onclick="alert('Zoom functionality would be implemented here')" style="padding: clamp(10px, 1.2vw, 16px) clamp(20px, 2.5vw, 30px); font-size: clamp(0.85rem, 1vw, 1.1rem);"> Zoom out </button>
+    </div>
+  </section>
+
+  <div class="tooltip" id="universal-tooltip">
+      <!-- Tooltip content will be populated by JS -->
+  </div>
+
+  <script>
+    const body = document.body;
+    const universalTooltipEl = document.getElementById('universal-tooltip');
+    const svgMap = document.getElementById('electoral-map-svg');
+
+    // Helper function for responsive sizing
+    function clamp(min, value, max) {
+        return Math.min(Math.max(min, value), max);
+    }
+
+    // For Popular Vote Aggregate Chart
+    const popularVoteChartSvgEl = document.getElementById('popular-vote-chart-svg');
+    const pvMmCurrentValueEl = document.getElementById('pv-mm-current-value');
+    const pvJrCurrentValueEl = document.getElementById('pv-jr-current-value');
+    const pvYAxisLabelsEl = document.getElementById('pv-y-axis-labels');
+    const pvXAxisLabelsEl = document.getElementById('pv-x-axis-labels');
+    let nationalPopularVoteTrendData = [];
+
+    // --- THEME TOGGLE ---
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    const icon = themeBtn.querySelector('i');
+
+    function applyTheme(theme) {
+        body.classList.toggle('dark', theme === 'dark');
+        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        themeBtn.classList.toggle('active', theme === 'dark');
+
+        const snakeLegendContainer = document.querySelector('.snake-chart-section div[style*="linear-gradient"]');
+        if (snakeLegendContainer) {
+            const parentDiv = snakeLegendContainer.parentElement.parentElement;
+            const hoverInstruction = parentDiv.querySelector('div[style*="text-transform: uppercase"]');
+            const legendLabels = parentDiv.querySelector('div[style*="display: flex"]');
+            if (hoverInstruction) hoverInstruction.style.color = theme === 'dark' ? 'var(--s-text-secondary-dark)' : 'var(--s-text-secondary-light)';
+            if (legendLabels) {
+                legendLabels.style.color = theme === 'dark' ? 'var(--s-text-secondary-dark)' : 'var(--s-text-secondary-light)';
+                const tossupLabel = legendLabels.querySelector('span[style*="font-weight: 700"]');
+                if (tossupLabel) tossupLabel.style.color = theme === 'dark' ? 'var(--s-text-primary-dark)' : 'var(--s-text-primary-light)';
+            }
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            if (typeof createDistributionChart === 'function' && _globallyFixedSimulatedMargins.length > 0) setTimeout(createDistributionChart, 50);
+            if (typeof initializeSVGElectoralMap === 'function') initializeSVGElectoralMap();
+            if (typeof buildSnakeChart === 'function') { buildSnakeChart(); scrollToSnakeCenter(); }
+            if (typeof renderPopularVoteAggregateChart === 'function' && nationalPopularVoteTrendData.length > 0) renderPopularVoteAggregateChart();
+        }
+    }
+    const initialTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+    themeBtn.addEventListener('click', () => {
+        const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+        applyTheme(newTheme);
     });
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      const diff = (data.harrisAggregate - data.trumpAggregate).toFixed(1);
-      const leader = diff > 0 ? 'Harris' : diff < 0 ? 'Trump' : 'Tie';
-      const margin = Math.abs(diff);
-      const color = leader === 'Harris' ? '#2196F3' : leader === 'Trump' ? '#FF0000' : '#000000';
-      const leadText = leader === 'Tie' ? 'Tie' : `${leader} +${margin}`;
+    // --- ELECTORAL DATA (OCT 20th - Current - for map/snake) ---
+    const electoralData = {
+        "AL": { name: "Alabama", abbr: "AL", ev: 9, jrProb: 85, moderateMonickaProb: 15, margin: "JR+22.7" },
+        "AK": { name: "Alaska", abbr: "AK", ev: 3, jrProb: 69, moderateMonickaProb: 31, margin: "JR+5.9" },
+        "AZ": { name: "Arizona", abbr: "AZ", ev: 11, jrProb: 41, moderateMonickaProb: 59, margin: "MM+4.7" },
+        "AR": { name: "Arkansas", abbr: "AR", ev: 6, jrProb: 88, moderateMonickaProb: 12, margin: "JR+22.8" },
+        "CA": { name: "California", abbr: "CA", ev: 54, jrProb: 1, moderateMonickaProb: 99, margin: "MM+26.0" },
+        "CO": { name: "Colorado", abbr: "CO", ev: 10, jrProb: 5, moderateMonickaProb: 95, margin: "MM+17.7" },
+        "CT": { name: "Connecticut", abbr: "CT", ev: 7, jrProb: 3, moderateMonickaProb: 97, margin: "MM+20.3" },
+        "DE": { name: "Delaware", abbr: "DE", ev: 3, jrProb: 4, moderateMonickaProb: 96, margin: "MM+20.5" },
+        "DC": { name: "D.C.", abbr: "DC", ev: 3, jrProb: 1, moderateMonickaProb: 99, margin: "MM+89.6" },
+        "FL": { name: "Florida", abbr: "FL", ev: 30, jrProb: 61, moderateMonickaProb: 39, margin: "JR+5.8" },
+        "GA": { name: "Georgia", abbr: "GA", ev: 16, jrProb: 39, moderateMonickaProb: 61, margin: "MM+4.9" },
+        "HI": { name: "Hawaii", abbr: "HI", ev: 4, jrProb: 2, moderateMonickaProb: 98, margin: "MM+28.6" },
+        "ID": { name: "Idaho", abbr: "ID", ev: 4, jrProb: 95, moderateMonickaProb: 5, margin: "JR+30.7" },
+        "IL": { name: "Illinois", abbr: "IL", ev: 19, jrProb: 3, moderateMonickaProb: 97, margin: "MM+14.7" },
+        "IN": { name: "Indiana", abbr: "IN", ev: 11, jrProb: 78, moderateMonickaProb: 22, margin: "JR+15.6" },
+        "IA": { name: "Iowa", abbr: "IA", ev: 6, jrProb: 79, moderateMonickaProb: 21, margin: "JR+8.3" },
+        "KS": { name: "Kansas", abbr: "KS", ev: 6, jrProb: 92, moderateMonickaProb: 8, margin: "JR+11.1" },
+        "KY": { name: "Kentucky", abbr: "KY", ev: 8, jrProb: 86, moderateMonickaProb: 14, margin: "JR+22.7" },
+        "LA": { name: "Louisiana", abbr: "LA", ev: 8, jrProb: 82, moderateMonickaProb: 18, margin: "JR+14.2" },
+        "ME": { name: "Maine At Large", abbr: "ME", ev: 2, jrProb: 10, moderateMonickaProb: 90, margin: "MM+12.7" },
+        "ME-1": { name: "Maine CD-1", abbr: "ME-1", ev: 1, jrProb: 2, moderateMonickaProb: 98, margin: "MM+27.8"},
+        "ME-2": { name: "Maine CD-2", abbr: "ME-2", ev: 1, jrProb: 60, moderateMonickaProb: 40, margin: "JR+3.7"},
+        "MD": { name: "Maryland", abbr: "MD", ev: 10, jrProb: 1, moderateMonickaProb: 99, margin: "MM+34.3" },
+        "MA": { name: "Massachusetts", abbr: "MA", ev: 11, jrProb: 1, moderateMonickaProb: 99, margin: "MM+29.9" },
+        "MI": { name: "Michigan", abbr: "MI", ev: 15, jrProb: 48, moderateMonickaProb: 52, margin: "MM+0.8" },
+        "MN": { name: "Minnesota", abbr: "MN", ev: 10, jrProb: 36, moderateMonickaProb: 64, margin: "MM+6.3" },
+        "MS": { name: "Mississippi", abbr: "MS", ev: 6, jrProb: 83, moderateMonickaProb: 17, margin: "JR+15.1" },
+        "MO": { name: "Missouri", abbr: "MO", ev: 10, jrProb: 89, moderateMonickaProb: 11, margin: "JR+14.6" },
+        "MT": { name: "Montana", abbr: "MT", ev: 4, jrProb: 81, moderateMonickaProb: 19, margin: "JR+13.1" },
+        "NE": { name: "Nebraska At Large", abbr: "NE", ev: 2, jrProb: 80, moderateMonickaProb: 20, margin: "JR+16.6" },
+        "NE-1": { name: "Nebraska CD-1", abbr: "NE-1", ev: 1, jrProb: 72, moderateMonickaProb: 28, margin: "JR+8.9"},
+        "NE-2": { name: "Nebraska CD-2", abbr: "NE-2", ev: 1, jrProb: 38, moderateMonickaProb: 62, margin: "MM+8.8"},
+        "NE-3": { name: "Nebraska CD-3", abbr: "NE-3", ev: 1, jrProb: 98, moderateMonickaProb: 2, margin: "JR+49.8"},
+        "NV": { name: "Nevada", abbr: "NV", ev: 6, jrProb: 47, moderateMonickaProb: 53, margin: "MM+1.2" },
+        "NH": { name: "New Hampshire", abbr: "NH", ev: 4, jrProb: 32, moderateMonickaProb: 68, margin: "MM+7.0" },
+        "NJ": { name: "New Jersey", abbr: "NJ", ev: 14, jrProb: 15, moderateMonickaProb: 85, margin: "MM+13.9" },
+        "NM": { name: "New Mexico", abbr: "NM", ev: 5, jrProb: 15, moderateMonickaProb: 85, margin: "MM+11.7" },
+        "NY": { name: "New York", abbr: "NY", ev: 28, jrProb: 5, moderateMonickaProb: 95, margin: "MM+18.1" },
+        "NC": { name: "North Carolina", abbr: "NC", ev: 16, jrProb: 49, moderateMonickaProb: 51, margin: "MM+0.2" },
+        "ND": { name: "North Dakota", abbr: "ND", ev: 3, jrProb: 96, moderateMonickaProb: 4, margin: "JR+32.7" },
+        "OH": { name: "Ohio", abbr: "OH", ev: 17, jrProb: 68, moderateMonickaProb: 32, margin: "JR+8.3" },
+        "OK": { name: "Oklahoma", abbr: "OK", ev: 7, jrProb: 97, moderateMonickaProb: 3, margin: "JR+28.5" },
+        "OR": { name: "Oregon", abbr: "OR", ev: 8, jrProb: 6, moderateMonickaProb: 94, margin: "MM+20.1" },
+        "PA": { name: "Pennsylvania", abbr: "PA", ev: 19, jrProb: 52, moderateMonickaProb: 48, margin: "JR+0.9" },
+        "RI": { name: "Rhode Island", abbr: "RI", ev: 4, jrProb: 8, moderateMonickaProb: 92, margin: "MM+14.4" },
+        "SC": { name: "South Carolina", abbr: "SC", ev: 9, jrProb: 72, moderateMonickaProb: 28, margin: "JR+10.0" },
+        "SD": { name: "South Dakota", abbr: "SD", ev: 3, jrProb: 90, moderateMonickaProb: 10, margin: "JR+25.4" },
+        "TN": { name: "Tennessee", abbr: "TN", ev: 11, jrProb: 87, moderateMonickaProb: 13, margin: "JR+21.9" },
+        "TX": { name: "Texas", abbr: "TX", ev: 40, jrProb: 70, moderateMonickaProb: 30, margin: "JR+7.9" },
+        "UT": { name: "Utah", abbr: "UT", ev: 6, jrProb: 89, moderateMonickaProb: 11, margin: "JR+13.8" },
+        "VT": { name: "Vermont", abbr: "VT", ev: 3, jrProb: 1, moderateMonickaProb: 99, margin: "MM+37.5" },
+        "VA": { name: "Virginia", abbr: "VA", ev: 13, jrProb: 23, moderateMonickaProb: 77, margin: "MM+12.2" },
+        "WA": { name: "Washington", abbr: "WA", ev: 12, jrProb: 4, moderateMonickaProb: 96, margin: "MM+24.0" },
+        "WV": { name: "West Virginia", abbr: "WV", ev: 4, jrProb: 97, moderateMonickaProb: 3, margin: "JR+34.1" },
+        "WI": { name: "Wisconsin", abbr: "WI", ev: 10, jrProb: 50, moderateMonickaProb: 50, margin: "Toss-up" },
+        "WY": { name: "Wyoming", abbr: "WY", ev: 3, jrProb: 98, moderateMonickaProb: 2, margin: "JR+40.0" }
+    };
 
-      return (
-        <div className="bg-white p-4 border border-gray-200 rounded shadow-md" style={{ fontFamily: 'Arial, sans-serif' }}>
-          <p className="text-lg font-bold" style={{ marginBottom: '8px' }}>{data.date}</p>
-          <p className="text-2xl font-bold" style={{ color: color, marginBottom: '12px' }}>{leadText}</p>
-          <p className="text-sm">Latest Poll: {data.pollster}</p>
-          <p className="text-sm">Sample Size: {data.sampleSize} ({data.type})</p>
-        </div>
-      );
+    // --- NATIONAL POPULAR VOTE AGGREGATE TREND ---
+    function generateNationalPopularVoteTrend() {
+        nationalPopularVoteTrendData = [];
+        const startDate = new Date(2048, 5, 1); // June 1st
+        const endDate = new Date(2048, 9, 20); // October 20th
+
+        const totalDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        const peakDayRatio = 0.70; 
+        const peakDayIndex = Math.floor(totalDays * peakDayRatio);
+
+        // Ensuring MM ends at +2 (51% vs 49%)
+        const juneMM = 47, juneJR = 53; // JR +6
+        const peakMM = 52, peakJR = 48; // MM +4
+        const octMM = 51, octJR = 49;   // MM +2 (FIXED)
+        const confidenceSpread = 2.5; 
+
+        let currentDate = new Date(startDate);
+        for (let i = 0; i < totalDays; i++) {
+            let baseMM;
+            const progress = i / (totalDays - 1);
+
+            if (i <= peakDayIndex) {
+                const segmentProgress = i / peakDayIndex;
+                baseMM = juneMM + (peakMM - juneMM) * segmentProgress;
+            } else {
+                const segmentProgress = (i - peakDayIndex) / (totalDays - 1 - peakDayIndex);
+                baseMM = peakMM + (octMM - peakMM) * segmentProgress;
+            }
+            
+            const waveFrequency = Math.PI * 2.5; 
+            const waveAmplitude = 1.0; 
+            const mmWave = waveAmplitude * Math.sin(progress * waveFrequency - Math.PI / 1.5); 
+
+            let dailyMM = baseMM + mmWave + (Math.random() - 0.5) * 0.8; 
+            let dailyJR = 100 - dailyMM; 
+
+            // Ensure final values are exactly MM 51%, JR 49%
+            if (i === totalDays - 1) {
+                dailyMM = 51;
+                dailyJR = 49;
+            }
+
+            dailyMM = Math.max(40, Math.min(60, dailyMM)); 
+            dailyJR = 100 - dailyMM;
+
+            let mmLower = Math.max(40, dailyMM - confidenceSpread);
+            let mmUpper = Math.min(60, dailyMM + confidenceSpread);
+            let jrLower = Math.max(40, dailyJR - confidenceSpread);
+            let jrUpper = Math.min(60, dailyJR + confidenceSpread);
+
+            nationalPopularVoteTrendData.push({
+                date: new Date(currentDate),
+                mmProb: dailyMM, jrProb: dailyJR,
+                mmLower: mmLower, mmUpper: mmUpper,
+                jrLower: jrLower, jrUpper: jrUpper
+            });
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
     }
-    return null;
-  };
 
-  return (
-    <div className="w-full h-96">
-      <h2 className="text-2xl font-bold mb-4">North Carolina 2024 Polling Aggregate</h2>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={aggregateData}>
-          <XAxis dataKey="date" />
-          <YAxis domain={[0, 60]} />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          <Line type="monotone" dataKey="harrisAggregate" stroke="#2196F3" name="Harris" dot={false} strokeWidth={3} />
-          <Line type="monotone" dataKey="trumpAggregate" stroke="#FF0000" name="Trump" dot={false} strokeWidth={3} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+    function simpleMovingAverage(dataArray, windowSize) {
+        if (!dataArray || windowSize <= 1) return dataArray.slice();
+        const sma = [];
+        for (let i = 0; i < dataArray.length; i++) {
+            const windowStart = Math.max(0, i - windowSize + 1);
+            const windowSlice = dataArray.slice(windowStart, i + 1);
+            const sum = windowSlice.reduce((acc, val) => acc + val, 0);
+            sma.push(sum / windowSlice.length);
+        }
+        return sma;
+    }
+    
+    function renderPopularVoteAggregateChart() {
+        if (!popularVoteChartSvgEl || nationalPopularVoteTrendData.length === 0) return;
 
-export default NorthCarolinaPollingAggregate;
+        const smoothingWindow = 4; // Reduced from 7 for less smooth lines
+        const mmProbsSmoothed = simpleMovingAverage(nationalPopularVoteTrendData.map(d => d.mmProb), smoothingWindow);
+        const jrProbsSmoothed = simpleMovingAverage(nationalPopularVoteTrendData.map(d => d.jrProb), smoothingWindow);
+        const mmLowerSmoothed = simpleMovingAverage(nationalPopularVoteTrendData.map(d => d.mmLower), smoothingWindow);
+        const mmUpperSmoothed = simpleMovingAverage(nationalPopularVoteTrendData.map(d => d.mmUpper), smoothingWindow);
+        const jrLowerSmoothed = simpleMovingAverage(nationalPopularVoteTrendData.map(d => d.jrLower), smoothingWindow);
+        const jrUpperSmoothed = simpleMovingAverage(nationalPopularVoteTrendData.map(d => d.jrUpper), smoothingWindow);
+
+        const svgNS = 'http://www.w3.org/2000/svg';
+        popularVoteChartSvgEl.innerHTML = ''; 
+
+        // Get actual height from the element for responsive sizing
+        const actualHeight = popularVoteChartSvgEl.clientHeight || 300;
+        const viewBoxWidth = 600; 
+        const viewBoxHeight = Math.max(250, actualHeight); 
+        const padding = { top: 15, right: 50, bottom: 35, left: 8 }; 
+        const plotWidth = viewBoxWidth - padding.left - padding.right;
+        const plotHeight = viewBoxHeight - padding.top - padding.bottom;
+
+        // Update SVG viewBox to match responsive height
+        popularVoteChartSvgEl.setAttribute('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+
+        // Fixed Y-axis: 40-60%
+        const yMin = 40;
+        const yMax = 60;
+
+        const getX = (index) => padding.left + (index / (nationalPopularVoteTrendData.length - 1)) * plotWidth;
+        const getY = (prob) => padding.top + plotHeight - ((prob - yMin) / (yMax - yMin) * plotHeight);
+
+        pvYAxisLabelsEl.innerHTML = ''; 
+        const yAxisTicks = [40, 44, 48, 52, 56, 60];
+        yAxisTicks.forEach(p => {
+            const y = getY(p);
+            const line = document.createElementNS(svgNS, 'line');
+            line.setAttribute('x1', padding.left); line.setAttribute('y1', y);
+            line.setAttribute('x2', viewBoxWidth - padding.right); line.setAttribute('y2', y);
+            line.setAttribute('class', 'pv-grid-line'); popularVoteChartSvgEl.appendChild(line);
+            const labelSpan = document.createElement('span'); labelSpan.textContent = `${p}%`; pvYAxisLabelsEl.appendChild(labelSpan);
+        });
+
+        pvXAxisLabelsEl.innerHTML = '';
+        const xLabelPoints = [
+            { text: "Jun 1", index: 0 },
+            { text: "Jul", index: nationalPopularVoteTrendData.findIndex(d=>d.date.getMonth() === 6 && d.date.getDate() === 15) },
+            { text: "Aug", index: nationalPopularVoteTrendData.findIndex(d=>d.date.getMonth() === 7 && d.date.getDate() === 15) },
+            { text: "Sep", index: nationalPopularVoteTrendData.findIndex(d=>d.date.getMonth() === 8 && d.date.getDate() === 15) },
+            { text: "Oct 20", index: nationalPopularVoteTrendData.length - 1 }
+        ];
+        xLabelPoints.forEach(xl => {
+            if (xl.index !== -1) { const labelSpan = document.createElement('span'); labelSpan.textContent = xl.text; pvXAxisLabelsEl.appendChild(labelSpan); }
+        });
+
+        const createBand = (upperData, lowerData, bandClass) => {
+            const path = document.createElementNS(svgNS, 'path');
+            const upperPoints = upperData.map((p, i) => `${getX(i).toFixed(2)},${getY(p).toFixed(2)}`).join(' L ');
+            const lowerPointsReversed = lowerData.slice().reverse().map((p, i) => `${getX(lowerData.length - 1 - i).toFixed(2)},${getY(p).toFixed(2)}`).join(' L ');
+            path.setAttribute('d', `M ${upperPoints} L ${lowerPointsReversed} Z`);
+            path.setAttribute('class', bandClass); popularVoteChartSvgEl.appendChild(path);
+        };
+        createBand(mmUpperSmoothed, mmLowerSmoothed, 'pv-confidence-band-mm');
+        createBand(jrUpperSmoothed, jrLowerSmoothed, 'pv-confidence-band-jr');
+
+        const mmPath = document.createElementNS(svgNS, 'polyline');
+        mmPath.setAttribute('points', mmProbsSmoothed.map((p, i) => `${getX(i).toFixed(2)},${getY(p).toFixed(2)}`).join(' '));
+        mmPath.setAttribute('class', 'pv-line-mm'); popularVoteChartSvgEl.appendChild(mmPath);
+        const jrPath = document.createElementNS(svgNS, 'polyline');
+        jrPath.setAttribute('points', jrProbsSmoothed.map((p, i) => `${getX(i).toFixed(2)},${getY(p).toFixed(2)}`).join(' '));
+        jrPath.setAttribute('class', 'pv-line-jr'); popularVoteChartSvgEl.appendChild(jrPath);
+
+        const lastIdx = nationalPopularVoteTrendData.length - 1; const lastX = getX(lastIdx);
+        const lastMMProb = mmProbsSmoothed[lastIdx]; const lastJRProb = jrProbsSmoothed[lastIdx];
+        const lastMMY = getY(lastMMProb); const lastJRY = getY(lastJRProb);
+
+        const mmCircleEnd = document.createElementNS(svgNS, 'circle');
+        mmCircleEnd.setAttribute('cx', lastX); mmCircleEnd.setAttribute('cy', lastMMY);
+        mmCircleEnd.setAttribute('class', 'pv-end-point-circle mm'); popularVoteChartSvgEl.appendChild(mmCircleEnd);
+        const mmLabelEnd = document.createElementNS(svgNS, 'text');
+        mmLabelEnd.setAttribute('x', lastX + 7); mmLabelEnd.setAttribute('y', lastMMY + 3);
+        mmLabelEnd.setAttribute('class', 'pv-end-point-label mm'); mmLabelEnd.textContent = `${Math.round(lastMMProb)}%`; popularVoteChartSvgEl.appendChild(mmLabelEnd);
+        pvMmCurrentValueEl.textContent = `${Math.round(lastMMProb)}%`;
+
+        const jrCircleEnd = document.createElementNS(svgNS, 'circle');
+        jrCircleEnd.setAttribute('cx', lastX); jrCircleEnd.setAttribute('cy', lastJRY);
+        jrCircleEnd.setAttribute('class', 'pv-end-point-circle jr'); popularVoteChartSvgEl.appendChild(jrCircleEnd);
+        const jrLabelEnd = document.createElementNS(svgNS, 'text');
+        jrLabelEnd.setAttribute('x', lastX + 7); jrLabelEnd.setAttribute('y', lastJRY + 3);
+        jrLabelEnd.setAttribute('class', 'pv-end-point-label jr'); jrLabelEnd.textContent = `${Math.round(lastJRProb)}%`; popularVoteChartSvgEl.appendChild(jrLabelEnd);
+        pvJrCurrentValueEl.textContent = `${Math.round(lastJRProb)}%`;
+
+        const hoverOverlayRect = document.createElementNS(svgNS, 'rect');
+        hoverOverlayRect.setAttribute('x', padding.left); hoverOverlayRect.setAttribute('y', padding.top);
+        hoverOverlayRect.setAttribute('width', plotWidth); hoverOverlayRect.setAttribute('height', plotHeight);
+        hoverOverlayRect.setAttribute('class', 'pv-hover-overlay-rect');
+        popularVoteChartSvgEl.appendChild(hoverOverlayRect);
+
+        const trackerLine = document.createElementNS(svgNS, 'line');
+        trackerLine.setAttribute('class', 'pv-hover-tracker-line');
+        trackerLine.style.display = 'none'; popularVoteChartSvgEl.appendChild(trackerLine);
+        const mmHoverCircle = document.createElementNS(svgNS, 'circle');
+        mmHoverCircle.setAttribute('class', 'pv-hover-circle mm');
+        mmHoverCircle.style.display = 'none'; popularVoteChartSvgEl.appendChild(mmHoverCircle);
+        const jrHoverCircle = document.createElementNS(svgNS, 'circle');
+        jrHoverCircle.setAttribute('class', 'pv-hover-circle jr');
+        jrHoverCircle.style.display = 'none'; popularVoteChartSvgEl.appendChild(jrHoverCircle);
+
+        hoverOverlayRect.addEventListener('mousemove', function(e) {
+            const svgRect = popularVoteChartSvgEl.getBoundingClientRect();
+            const mouseX = e.clientX - svgRect.left;
+            const scaleX = viewBoxWidth / svgRect.width;
+            const adjustedMouseX = mouseX * scaleX;
+            
+            if (adjustedMouseX < padding.left || adjustedMouseX > viewBoxWidth - padding.right) {
+                trackerLine.style.display = 'none'; mmHoverCircle.style.display = 'none'; jrHoverCircle.style.display = 'none';
+                hideTooltip(universalTooltipEl); return;
+            }
+            const ratio = (adjustedMouseX - padding.left) / plotWidth;
+            const index = Math.max(0, Math.min(nationalPopularVoteTrendData.length - 1, Math.round(ratio * (nationalPopularVoteTrendData.length - 1))));
+            
+            const dataPoint = nationalPopularVoteTrendData[index];
+            const smoothedMM = mmProbsSmoothed[index];
+            const smoothedJR = jrProbsSmoothed[index];
+
+            const xPos = getX(index);
+            trackerLine.setAttribute('x1', xPos); trackerLine.setAttribute('y1', padding.top);
+            trackerLine.setAttribute('x2', xPos); trackerLine.setAttribute('y2', viewBoxHeight - padding.bottom);
+            trackerLine.style.display = 'block';
+
+            mmHoverCircle.setAttribute('cx', xPos); mmHoverCircle.setAttribute('cy', getY(smoothedMM));
+            mmHoverCircle.style.display = 'block';
+            jrHoverCircle.setAttribute('cx', xPos); jrHoverCircle.setAttribute('cy', getY(smoothedJR));
+            jrHoverCircle.style.display = 'block';
+            
+            const dateFormatted = dataPoint.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const netLead = smoothedMM - smoothedJR;
+            const netLeadFormatted = `${netLead > 0 ? 'MM +' : 'JR +'}${Math.abs(netLead).toFixed(1)} pts`;
+            
+            universalTooltipEl.innerHTML = `
+                <div class="tooltip-pv-content">
+                    <div class="header">${dateFormatted}, 2048</div>
+                    <div class="pv-item mm">
+                        <span class="candidate">ModerateMonicka:</span>
+                        <span class="value">${smoothedMM.toFixed(1)}%</span>
+                        <span class="ci-range">(${dataPoint.mmLower.toFixed(1)}-${dataPoint.mmUpper.toFixed(1)}%)</span>
+                    </div>
+                    <div class="pv-item jr">
+                        <span class="candidate">JR:</span>
+                        <span class="value">${smoothedJR.toFixed(1)}%</span>
+                        <span class="ci-range">(${dataPoint.jrLower.toFixed(1)}-${dataPoint.jrUpper.toFixed(1)}%)</span>
+                    </div>
+                    <div class="pv-item net-lead">
+                        <span class="candidate">Net:</span>
+                        <span class="value" style="color: ${netLead > 0 ? 'var(--navy)' : 'var(--crimson)'};">${netLeadFormatted}</span>
+                    </div>
+                </div>`;
+            positionAndShowTooltip(e, universalTooltipEl, popularVoteChartSvgEl);
+        });
+        hoverOverlayRect.addEventListener('mouseleave', function() {
+            trackerLine.style.display = 'none'; mmHoverCircle.style.display = 'none'; jrHoverCircle.style.display = 'none';
+            hideTooltip(universalTooltipEl);
+        });
+    }
+
+    // --- DISTRIBUTION CHART (Dot Plot) ---
+    let _globallyFixedSimulatedMargins = [];
+    const _simulationCountForFixedPattern = 1600;
+    const _electoralVoteTotalForFixedPattern = 538;
+    const _dataMeanJRMarginForFixedPattern = -4; // MM leads PV by 2, so likely leads EV too. JR margin is negative.
+    const _dataStdDevForFixedPattern = 70;
+    
+    function randomNormal(mean, stdev) { 
+        let u = 0, v = 0; 
+        while (u === 0) u = Math.random(); 
+        while (v === 0) v = Math.random(); 
+        let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v); 
+        return mean + stdev * num; 
+    }
+    
+    function generateFixedSimulationDataOnce() { 
+        if (_globallyFixedSimulatedMargins.length === 0) { 
+            for (let i = 0; i < _simulationCountForFixedPattern; i++) { 
+                let jrMargin = randomNormal(_dataMeanJRMarginForFixedPattern, _dataStdDevForFixedPattern); 
+                jrMargin = Math.round(jrMargin); 
+                jrMargin = Math.max(-_electoralVoteTotalForFixedPattern, Math.min(jrMargin, _electoralVoteTotalForFixedPattern)); 
+                _globallyFixedSimulatedMargins.push(jrMargin); 
+            } 
+        } 
+    }
+    
+    function createDistributionChart() {
+        const svg = document.getElementById('distribution-svg'); 
+        if (!svg || !universalTooltipEl || _globallyFixedSimulatedMargins.length === 0) return; 
+        svg.innerHTML = ''; 
+        
+        const viewBoxWidth = 900, viewBoxHeight = 400; 
+        const margin = { top: 25, right: 30, bottom: 55, left: 30 };
+        const chartWidth = viewBoxWidth - margin.left - margin.right; 
+        const xDomainMin = -250, xDomainMax = 250, binSizeForXAxis = 5;
+        
+        const bins = new Map(); 
+        for (let b = Math.floor(xDomainMin / binSizeForXAxis) * binSizeForXAxis; b <= xDomainMax; b += binSizeForXAxis) bins.set(b, []);
+        
+        _globallyFixedSimulatedMargins.forEach(jrMarginVal => { 
+            let bKey = Math.round(jrMarginVal / binSizeForXAxis) * binSizeForXAxis; 
+            bKey = Math.max(Math.floor(xDomainMin / binSizeForXAxis) * binSizeForXAxis, Math.min(bKey, Math.floor(xDomainMax / binSizeForXAxis) * binSizeForXAxis)); 
+            if (bins.has(bKey)) bins.get(bKey).push(jrMarginVal); 
+        });
+        
+        const xScale = (val) => margin.left + ((val - xDomainMin) / (xDomainMax - xDomainMin)) * chartWidth;
+        const calculateEVs = (jrMargin) => { 
+            let jrEVs = Math.round((_electoralVoteTotalForFixedPattern + jrMargin) / 2); 
+            jrEVs = Math.max(0, Math.min(_electoralVoteTotalForFixedPattern, jrEVs)); 
+            return { jrEVs, moderateMonickaEVs: _electoralVoteTotalForFixedPattern - jrEVs }; 
+        };
+        
+        // Function to calculate color intensity based on distance from tie
+        const getColorIntensity = (margin) => {
+            const absMargin = Math.abs(margin);
+            const maxDistance = 150; // Maximum distance for full opacity
+            const intensity = Math.min(absMargin / maxDistance, 1);
+            return 0.4 + (intensity * 0.5); // Range from 0.4 to 0.9 opacity
+        };
+        
+        const svgNS = 'http://www.w3.org/2000/svg'; 
+        const isDark = body.classList.contains('dark');
+        
+        // Enhanced center line with glow effect
+        const centerLine = document.createElementNS(svgNS, 'line'); 
+        Object.assign(centerLine.style, { 
+            stroke: isDark ? 'var(--border-dark)' : 'var(--border-light)', 
+            strokeWidth: '2', 
+            opacity: '0.6', 
+            strokeDasharray: '4 4',
+            filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.3))'
+        }); 
+        centerLine.setAttribute('x1', xScale(0)); centerLine.setAttribute('x2', xScale(0)); 
+        centerLine.setAttribute('y1', margin.top); centerLine.setAttribute('y2', viewBoxHeight - margin.bottom); 
+        svg.appendChild(centerLine);
+        
+        // Enhanced bottom axis line
+        const bottomAxisLine = document.createElementNS(svgNS, 'line'); 
+        Object.assign(bottomAxisLine.style, { 
+            stroke: isDark ? 'var(--border-dark)' : 'var(--border-light)', 
+            strokeWidth: '1.5',
+            opacity: '0.8'
+        }); 
+        bottomAxisLine.setAttribute('x1', margin.left); bottomAxisLine.setAttribute('x2', viewBoxWidth - margin.right); 
+        bottomAxisLine.setAttribute('y1', viewBoxHeight - margin.bottom); bottomAxisLine.setAttribute('y2', viewBoxHeight - margin.bottom); 
+        svg.appendChild(bottomAxisLine);
+        
+        // Enhanced axis labels
+        [-200, -100, 0, 100, 200].forEach(val => { 
+            if (val < xDomainMin || val > xDomainMax) return; 
+            const tickLabel = document.createElementNS(svgNS, 'text'); 
+            const fontSize = Math.min(Math.max(12, window.innerWidth * 0.012), 16);
+            Object.assign(tickLabel.style, { 
+                textAnchor: 'middle', 
+                fontSize: fontSize + 'px', 
+                fontWeight: val === 0 ? '700' : '600', 
+                fill: isDark ? 'var(--text-secondary-dark)' : 'var(--text-secondary-light)',
+                filter: val === 0 ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' : 'none'
+            }); 
+            tickLabel.setAttribute('x', xScale(val)); 
+            tickLabel.setAttribute('y', viewBoxHeight - margin.bottom + 25); 
+            tickLabel.textContent = val === 0 ? 'Tie (0 EV Margin)' : `${val < 0 ? 'MM' : 'JR'}+${Math.abs(val)}`; 
+            svg.appendChild(tickLabel); 
+        });
+        
+        const dotRadius = 3.2; // Slightly larger dots
+        const yDotSpacing = dotRadius * 2 + 1.5;
+        
+        Array.from(bins.keys()).sort((a, b) => a - b).forEach(binKey => { 
+            const marginsInBin = bins.get(binKey); 
+            if (marginsInBin.length === 0) return; 
+            
+            const colX = xScale(binKey + binSizeForXAxis / 2); 
+            const { jrEVs, moderateMonickaEVs } = calculateEVs(binKey); 
+            let baseColor = jrEVs === 269 && moderateMonickaEVs === 269 ? (isDark ? 'var(--tie-grey-dark)' : 'var(--tie-grey-light)') : (jrEVs > moderateMonickaEVs ? 'var(--crimson)' : 'var(--navy)');
+            
+            marginsInBin.forEach((actualMargin, idx) => { 
+                const cY = (viewBoxHeight - margin.bottom - dotRadius - 2) - (idx * yDotSpacing); 
+                if (cY < margin.top + dotRadius) return; 
+                
+                const circle = document.createElementNS(svgNS, 'circle'); 
+                circle.setAttribute('cx', colX); circle.setAttribute('cy', cY); circle.setAttribute('r', dotRadius); 
+                circle.dataset.actualMargin = actualMargin.toFixed(0); 
+                
+                // Apply dynamic opacity based on distance from tie
+                const opacity = getColorIntensity(actualMargin);
+                Object.assign(circle.style, { 
+                    fill: baseColor, 
+                    opacity: opacity.toString(),
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))'
+                });
+                
+                circle.addEventListener('mouseenter', (e) => { 
+                    circle.style.opacity = '1';
+                    circle.style.transform = 'scale(1.2)';
+                    circle.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))';
+                    const { jrEVs: dotJrEVs, moderateMonickaEVs: dotMmEVs } = calculateEVs(parseFloat(circle.dataset.actualMargin)); 
+                    let winner = dotJrEVs === 269 && dotMmEVs === 269 ? 'Tie' : (dotJrEVs > dotMmEVs ? 'JR' : 'ModerateMonicka'); 
+                    universalTooltipEl.innerHTML = `<div class="tooltip-dotplot-content"><div class="header">${winner === 'Tie' ? 'Electoral College Tie' : winner + ' Victory'}</div><div class="ev-split">JR ${dotJrEVs} - MM ${dotMmEVs}</div></div>`; 
+                    positionAndShowTooltip(e, universalTooltipEl, e.target); 
+                });
+                circle.addEventListener('mouseleave', () => { 
+                    circle.style.opacity = opacity.toString();
+                    circle.style.transform = 'scale(1)';
+                    circle.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))';
+                    hideTooltip(universalTooltipEl); 
+                });
+                svg.appendChild(circle);
+            });
+        });
+    }
+
+    // --- ELECTORAL SVG MAP ---
+    const mapLegendCategories = [
+        { name: 'Solid MM', classSuffix: 'solid-b', probRange: '≥80% MM' }, 
+        { name: 'Likely MM', classSuffix: 'likely-b', probRange: '70-79% MM' }, 
+        { name: 'Lean MM', classSuffix: 'lean-b', probRange: '60-69% MM' },
+        { name: 'Toss-up', classSuffix: 'tossup', probRange: '<60% Either' },
+        { name: 'Lean JR', classSuffix: 'lean-r', probRange: '60-69% JR' }, 
+        { name: 'Likely JR', classSuffix: 'likely-r', probRange: '70-79% JR' }, 
+        { name: 'Solid JR', classSuffix: 'solid-r', probRange: '≥80% JR' }
+    ];
+    
+    function getMapCategoryClass(jrProb, mmProb) { 
+        if (mmProb >= 80) return 'solid-b'; 
+        if (mmProb >= 70) return 'likely-b'; 
+        if (mmProb >= 60) return 'lean-b'; 
+        if (jrProb >= 80) return 'solid-r'; 
+        if (jrProb >= 70) return 'likely-r'; 
+        if (jrProb >= 60) return 'lean-r'; 
+        return 'tossup';
+    }
+    
+    function initializeSVGElectoralMap() {
+        if (!svgMap || !universalTooltipEl) return;
+        
+        svgMap.querySelectorAll('.map-state').forEach(p => p.classList.remove('solid-r', 'likely-r', 'lean-r', 'tossup', 'likely-b', 'lean-b', 'solid-b', 'default-fill', 'light-mode', 'dark-mode'));
+        const isDark = body.classList.contains('dark');
+        
+        for (const stateAbbr in electoralData) { 
+            const stateData = electoralData[stateAbbr]; 
+            const path = svgMap.querySelector(`#${stateAbbr}`);
+            if (path) { 
+                const categoryClass = getMapCategoryClass(stateData.jrProb, stateData.moderateMonickaProb); 
+                path.classList.add('map-state', categoryClass); 
+                if (['tossup', 'likely-b', 'lean-b', 'lean-r', 'likely-r'].includes(categoryClass)) path.classList.add(isDark ? 'dark-mode' : 'light-mode'); 
+                path.dataset.stateData = JSON.stringify(stateData); 
+            }
+        }
+        
+        svgMap.querySelectorAll('path[id]:not([data-state-data]), rect[id]:not([data-state-data])').forEach(p => { 
+            if (p.id !== 'snake-path-def') p.classList.add('map-state', 'default-fill', isDark ? 'dark-mode' : 'light-mode'); 
+        });
+        
+        if (!svgMap.dataset.listenersAdded) {
+            svgMap.addEventListener('mouseover', function(e) {
+                const targetEl = e.target.closest('.map-state');
+                if (targetEl && targetEl.dataset.stateData) { 
+                    const stateData = JSON.parse(targetEl.dataset.stateData); 
+                    targetEl.style.opacity = getComputedStyle(document.documentElement).getPropertyValue('--map-hover-opacity').trim(); 
+                    universalTooltipEl.innerHTML = `<div class="tooltip-map-state-content"><div class="state-info">${stateData.name} (${stateData.ev} EVs)</div><div class="prob-heading">Chance of Winning State (Oct 20th)</div><div class="prob-item"><span class="candidate jr">JR</span><span class="prob">${stateData.jrProb}%</span></div><div class="prob-item"><span class="candidate moderateMonicka">ModerateMonicka</span><span class="prob">${stateData.moderateMonickaProb}%</span></div><div class="margin-info">Est. Margin: <span class="margin-value ${stateData.jrProb > stateData.moderateMonickaProb ? 'jr' : (stateData.moderateMonickaProb > stateData.jrProb ? 'moderateMonicka' : 'tossup')}">${stateData.margin}</span></div></div>`; 
+                    positionAndShowTooltip(e, universalTooltipEl, targetEl); 
+                }
+            });
+            svgMap.addEventListener('mouseout', function(e) { 
+                const targetEl = e.target.closest('.map-state'); 
+                if (targetEl) { 
+                    targetEl.style.opacity = '1'; 
+                    hideTooltip(universalTooltipEl); 
+                }
+            });
+            svgMap.dataset.listenersAdded = 'true';
+        }
+        buildMapLegendBelow();
+    }
+    
+    function buildMapLegendBelow() {
+        const legendContainer = document.getElementById('map-legend-content'); 
+        if (!legendContainer) return; 
+        const isDark = body.classList.contains('dark');
+        
+        legendContainer.innerHTML = mapLegendCategories.map(item => { 
+            let colorVar = ''; 
+            const catBase = item.classSuffix.replace(/-[rb]$/, ''); 
+            const partyAffix = item.classSuffix.endsWith('-r') ? '-r' : (item.classSuffix.endsWith('-b') ? '-b' : ''); 
+            if (catBase === 'solid') colorVar = `var(--${item.classSuffix}-color)`; 
+            else if (catBase === 'tossup') colorVar = `var(--${catBase}-color-${isDark ? 'dark' : 'light'})`; 
+            else colorVar = `var(--${catBase}${partyAffix}-color-${isDark ? 'dark' : 'light'})`; 
+            return `<div class="map-legend-item"><span class="map-legend-color-box" style="background-color: ${colorVar};"></span>${item.name} <span class="prob-range">(${item.probRange})</span></div>`; 
+        }).join('');
+    }
+
+    // --- TOOLTIP UTILITY (Universal HOVER Tooltip) ---
+    function positionAndShowTooltip(event, tooltipElement, anchorElement = null) {
+        const tooltipRect = tooltipElement.getBoundingClientRect(); 
+        let targetX, targetY;
+        
+        if (anchorElement && typeof anchorElement.getBoundingClientRect === 'function') {
+            const anchorRect = anchorElement.getBoundingClientRect();
+            if (anchorElement.ownerSVGElement && typeof anchorElement.getBBox === 'function') {
+                const svgP = anchorElement.ownerSVGElement.createSVGPoint(); 
+                svgP.x = event.clientX; svgP.y = event.clientY; 
+                let ctm = anchorElement.getScreenCTM();
+                if (ctm) { 
+                    const matrix = ctm.inverse(); 
+                    const localPoint = svgP.matrixTransform(matrix); 
+                    const bbox = anchorElement.getBBox(); 
+                    svgP.x = bbox.x + bbox.width / 2; svgP.y = bbox.y; 
+                    const screenPoint = svgP.matrixTransform(ctm); 
+                    targetX = screenPoint.x; targetY = screenPoint.y - tooltipRect.height - 10;
+                } else { 
+                    targetX = event.clientX; targetY = event.clientY - tooltipRect.height - 10; 
+                }
+            } else { 
+                targetX = event.clientX; targetY = anchorRect.top - tooltipRect.height - 10; 
+            }
+            if (targetY < 10) targetY = (anchorElement.ownerSVGElement ? anchorRect.bottom : event.clientY) + 15;
+        } else { 
+            targetX = event.clientX; targetY = event.clientY - tooltipRect.height - 10; 
+            if (targetY < 10) targetY = event.clientY + 15; 
+        }
+        
+        if (targetX - (tooltipRect.width / 2) < 10) targetX = 10 + (tooltipRect.width / 2);
+        if (targetX + (tooltipRect.width / 2) > window.innerWidth - 10) targetX = window.innerWidth - 10 - (tooltipRect.width / 2);
+        if (targetY < 10) targetY = 10; 
+        if (targetY + tooltipRect.height > window.innerHeight - 10) targetY = window.innerHeight - 10 - tooltipRect.height;
+        
+        tooltipElement.style.left = `${targetX}px`; 
+        tooltipElement.style.top = `${targetY}px`; 
+        tooltipElement.classList.add('visible');
+    }
+    
+    function hideTooltip(tooltipElement) { 
+        tooltipElement.classList.remove('visible'); 
+    }
+
+    // --- SNAKE CHART FUNCTIONALITY ---
+    const snakeElectoralData = electoralData; 
+
+    function parseSnakeMargin(marginStr) { 
+        const match = marginStr.match(/([A-Za-z]+)\+?(-?\d+\.?\d*)/i); 
+        if (match) { 
+            const party = match[1].toUpperCase(); 
+            const value = parseFloat(match[2]); 
+            if (party === 'MM') return value; 
+            if (party === 'JR') return -value; 
+        } 
+        return 0; 
+    }
+    
+    function getSnakeCategoryClass(numericMargin) { 
+        if (numericMargin >= 20) return 'solid-d'; 
+        if (numericMargin >= 10) return 'likely-d'; 
+        if (numericMargin >= 3) return 'lean-d'; 
+        if (numericMargin <= -20) return 'solid-r'; 
+        if (numericMargin <= -10) return 'likely-r'; 
+        if (numericMargin <= -3) return 'lean-r'; 
+        return 'tossup';
+    }
+    
+    function shouldSnakeTextBeWhite(categoryClass) { 
+        return ['solid-d', 'likely-d', 'solid-r', 'likely-r'].includes(categoryClass);
+    }
+    
+    function getSubPath(pathElement, startDistance, endDistance) { 
+        if (!pathElement || typeof pathElement.getPointAtLength !== 'function') return "M0,0"; 
+        const totalLength = pathElement.getTotalLength(); 
+        if (totalLength === 0) return "M0,0"; 
+        startDistance = Math.max(0, Math.min(startDistance, totalLength)); 
+        endDistance = Math.max(0, Math.min(endDistance, totalLength)); 
+        if (startDistance >= endDistance) return `M${pathElement.getPointAtLength(startDistance).x.toFixed(2)},${pathElement.getPointAtLength(startDistance).y.toFixed(2)}`; 
+        const points = []; 
+        const numSamples = Math.max(2, Math.ceil((endDistance - startDistance) / 2.5)); 
+        for (let i = 0; i <= numSamples; i++) { 
+            const d = startDistance + (i / numSamples) * (endDistance - startDistance); 
+            const point = pathElement.getPointAtLength(d); 
+            points.push(`${point.x.toFixed(2)},${point.y.toFixed(2)}`); 
+        } 
+        return `M ${points.join(' L ')}`; 
+    }
+
+    function buildSnakeChart() { 
+        const snakeChartSvg = document.getElementById('snake-chart-svg'); 
+        const snakePathEl = document.getElementById('snake-path-def'); 
+        const basePath = document.getElementById('snake-base-path'); 
+        const universalTooltipSnakeEl = document.getElementById('universal-tooltip'); 
+        if (!snakeChartSvg || !snakePathEl || !basePath || !universalTooltipSnakeEl) return;
+        
+        const segmentsGroup = document.getElementById('snake-state-segments'); 
+        const labelsGroup = document.getElementById('snake-state-labels'); 
+        const separatorsGroup = document.getElementById('snake-state-separators'); 
+        const marker270Group = document.getElementById('ev-270-marker');
+        segmentsGroup.innerHTML = ''; labelsGroup.innerHTML = ''; separatorsGroup.innerHTML = ''; marker270Group.innerHTML = '';
+        
+        const states = Object.entries(snakeElectoralData).map(([abbr, data]) => ({ ...data, abbr, numericMargin: parseSnakeMargin(data.margin) })).filter(s => s.ev > 0).sort((a, b) => b.numericMargin - a.numericMargin);
+        const totalEVs = states.reduce((sum, state) => sum + state.ev, 0);
+        
+        const svgViewBoxWidth = 2600, svgViewBoxHeight = 500, pathMarginX = 50; 
+        const numPathSegments = 9, intensityFactor = 2.9, climaxOffsetPercentage = -0.10, baseAmplitude = 70; 
+        const pathStartX = pathMarginX, pathEndX = svgViewBoxWidth - pathMarginX, pathActualWidth = pathEndX - pathStartX, baselineY = svgViewBoxHeight / 2;
+        const targetEVsRatio = 270 / totalEVs, estimated270EV_X_Base = pathStartX + targetEVsRatio * pathActualWidth; 
+        const climaxTargetX = estimated270EV_X_Base + (climaxOffsetPercentage * pathActualWidth); 
+        const effectiveClimaxTargetX = Math.max(pathStartX, Math.min(pathEndX, climaxTargetX));
+        
+        const segmentXLength = pathActualWidth / numPathSegments; 
+        let pathCommands = [`M ${pathStartX.toFixed(2)},${baselineY.toFixed(2)}`], currentX = pathStartX;
+        
+        for (let i = 0; i < numPathSegments; i++) { 
+            const nextX = pathStartX + (i + 1) * segmentXLength; 
+            const curveMidX = currentX + segmentXLength / 2; 
+            const distFromClimaxTarget = Math.abs(curveMidX - effectiveClimaxTargetX); 
+            const normalizedDistFromClimax = distFromClimaxTarget / (pathActualWidth / 2); 
+            const climaxEmphasisFactor = Math.pow(Math.cos(Math.min(normalizedDistFromClimax, 1) * Math.PI / 2), 2.0); 
+            const currentDynamicAmplitude = baseAmplitude * intensityFactor * climaxEmphasisFactor; 
+            const yPeakOrTrough = baselineY + ((i % 2 === 0) ? -currentDynamicAmplitude : currentDynamicAmplitude); 
+            const cp1xOffsetFactor = 0.38; 
+            const cp2xOffsetFactor = 1 - cp1xOffsetFactor;
+            
+            if (i === 0) { 
+                const cp1x = currentX + segmentXLength * cp1xOffsetFactor, cp1y = yPeakOrTrough; 
+                const cp2x = nextX - segmentXLength * cp1xOffsetFactor, cp2y = yPeakOrTrough; 
+                pathCommands.push(`C ${cp1x.toFixed(2)},${cp1y.toFixed(2)} ${cp2x.toFixed(2)},${cp2y.toFixed(2)} ${nextX.toFixed(2)},${baselineY.toFixed(2)}`); 
+            } else { 
+                const cp2sx = currentX + segmentXLength * cp2xOffsetFactor, cp2sy = yPeakOrTrough; 
+                pathCommands.push(`S ${cp2sx.toFixed(2)},${cp2sy.toFixed(2)} ${nextX.toFixed(2)},${baselineY.toFixed(2)}`); 
+            } 
+            currentX = nextX; 
+        }
+        
+        const snakePathD = pathCommands.join(' '); 
+        snakePathEl.setAttribute('d', snakePathD); 
+        basePath.setAttribute('d', snakePathD);
+        
+        const pathLength = snakePathEl.getTotalLength(); 
+        if (pathLength === 0) return;
+        
+        const minSegmentLength = 18; 
+        let marker270Position = null, cumulativePathPosition = 0, cumulativeEVsForMarker = 0;
+        
+        let paOutlineElement = states.find(s => s.abbr === 'PA') ? document.createElementNS('http://www.w3.org/2000/svg', 'path') : null; 
+        if (paOutlineElement) { 
+            paOutlineElement.setAttribute('class', 'pa-outline'); 
+            segmentsGroup.appendChild(paOutlineElement); 
+        }
+        
+        states.forEach((state, index) => {
+            const evProportion = state.ev / totalEVs; 
+            let segmentLengthOnPath = evProportion * pathLength; 
+            if (segmentLengthOnPath < minSegmentLength && state.ev > 0) segmentLengthOnPath = minSegmentLength;
+            
+            const segmentStart = cumulativePathPosition, segmentEnd = Math.min(cumulativePathPosition + segmentLengthOnPath, pathLength); 
+            segmentLengthOnPath = segmentEnd - segmentStart; 
+            
+            if (state.abbr === 'PA' && paOutlineElement) paOutlineElement.setAttribute('d', getSubPath(snakePathEl, segmentStart, segmentEnd));
+            
+            if (!marker270Position && cumulativeEVsForMarker < 270 && (cumulativeEVsForMarker + state.ev) >= 270) { 
+                const evIntoState = 270 - cumulativeEVsForMarker; 
+                const proportionIntoStateSegment = state.ev > 0 ? evIntoState / state.ev : 0; 
+                marker270Position = segmentStart + (proportionIntoStateSegment * segmentLengthOnPath); 
+            }
+            cumulativeEVsForMarker += state.ev;
+            
+            const segment = document.createElementNS('http://www.w3.org/2000/svg', 'path'); 
+            const insetStart = segmentStart + (index > 0 ? 0.5 : 0), insetEndPath = segmentEnd - (index < states.length - 1 ? 0.5 : 0);
+            segment.setAttribute('d', getSubPath(snakePathEl, Math.max(0, insetStart), Math.min(pathLength, insetEndPath))); 
+            const category = getSnakeCategoryClass(state.numericMargin); 
+            segment.setAttribute('class', `state-segment ${category}`); 
+            segment.dataset.stateData = JSON.stringify(state); 
+            segment.dataset.stateAbbr = state.abbr;
+            
+            segment.addEventListener('mouseenter', (e) => { 
+                const sData = JSON.parse(e.target.dataset.stateData); 
+                universalTooltipSnakeEl.innerHTML = `<div class="tooltip-snake-state-content"><div class="tooltip-header">${sData.name} (${sData.ev} EVs)</div><div class="tooltip-row"><span class="candidate jr">JR</span><span class="prob">${sData.jrProb}%</span></div><div class="tooltip-row"><span class="candidate moderateMonicka">ModerateMonicka</span><span class="prob">${sData.moderateMonickaProb}%</span></div><div class="tooltip-margin">Est. Margin: <strong>${sData.margin}</strong></div></div>`; 
+                positionAndShowTooltip(e, universalTooltipSnakeEl, e.target); 
+            });
+            segment.addEventListener('mouseleave', () => { 
+                hideTooltip(universalTooltipSnakeEl); 
+            });
+            segmentsGroup.appendChild(segment);
+            
+            if (index < states.length - 1 && segmentEnd < pathLength -1) { 
+                const sepPos = segmentEnd, sepPoint = snakePathEl.getPointAtLength(sepPos); 
+                const beforePt = snakePathEl.getPointAtLength(Math.max(0, sepPos - 1)), afterPt = snakePathEl.getPointAtLength(Math.min(pathLength, sepPos + 1)); 
+                const angle = Math.atan2(afterPt.y - beforePt.y, afterPt.x - beforePt.x), perpAngle = angle + Math.PI / 2, lineHalfLen = 21; 
+                const separator = document.createElementNS('http://www.w3.org/2000/svg', 'line'); 
+                separator.setAttribute('x1', (sepPoint.x - lineHalfLen * Math.cos(perpAngle)).toFixed(2)); 
+                separator.setAttribute('y1', (sepPoint.y - lineHalfLen * Math.sin(perpAngle)).toFixed(2)); 
+                separator.setAttribute('x2', (sepPoint.x + lineHalfLen * Math.cos(perpAngle)).toFixed(2)); 
+                separator.setAttribute('y2', (sepPoint.y + lineHalfLen * Math.sin(perpAngle)).toFixed(2)); 
+                separator.setAttribute('class', 'state-separator'); 
+                separatorsGroup.appendChild(separator); 
+            }
+            
+            if (segmentLengthOnPath >= minSegmentLength * 1.3) { 
+                const midPoint = snakePathEl.getPointAtLength(segmentStart + segmentLengthOnPath / 2); 
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text'); 
+                label.setAttribute('x', midPoint.x.toFixed(2)); 
+                label.setAttribute('y', midPoint.y.toFixed(2)); 
+                label.setAttribute('class', `state-text ${shouldSnakeTextBeWhite(category) ? 'on-dark' : ''}`); 
+                label.textContent = state.abbr.replace(/-[123]$/, ''); 
+                labelsGroup.appendChild(label); 
+            }
+            
+            cumulativePathPosition = segmentEnd; 
+        });
+        
+        if (marker270Position !== null && marker270Position <= pathLength) { 
+            const markerPoint = snakePathEl.getPointAtLength(marker270Position); 
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line'); 
+            line.setAttribute('x1', markerPoint.x.toFixed(2)); 
+            line.setAttribute('y1', (markerPoint.y - 85).toFixed(2)); 
+            line.setAttribute('x2', markerPoint.x.toFixed(2)); 
+            line.setAttribute('y2', (markerPoint.y + 85).toFixed(2)); 
+            line.setAttribute('class', 'ev270-marker-line'); 
+            marker270Group.appendChild(line); 
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text'); 
+            text.setAttribute('x', markerPoint.x.toFixed(2)); 
+            text.setAttribute('y', (markerPoint.y + 105).toFixed(2)); 
+            text.setAttribute('class', 'ev270-marker-text'); 
+            text.textContent = '270 EVs'; 
+            marker270Group.appendChild(text); 
+        }
+    }
+    
+    function scrollToSnakeCenter() { 
+        const wrapper = document.querySelector('.snake-chart-wrapper'); 
+        if (!wrapper) return; 
+        const markerLine = document.querySelector('.ev270-marker-line');
+        let scrollTargetX = markerLine ? parseFloat(markerLine.getAttribute('x1')) - (wrapper.clientWidth / 2) : (wrapper.scrollWidth - wrapper.clientWidth) / 2;
+        wrapper.scrollLeft = Math.max(0, scrollTargetX);
+    }
+
+    // --- INITIALIZATION ---
+    let resizeTimer;
+    function initializeAllVisuals() {
+        if (nationalPopularVoteTrendData.length === 0) generateNationalPopularVoteTrend();
+        renderPopularVoteAggregateChart();
+        if (_globallyFixedSimulatedMargins.length === 0) generateFixedSimulationDataOnce();
+        if (_globallyFixedSimulatedMargins.length > 0) createDistributionChart();
+        initializeSVGElectoralMap();
+        buildSnakeChart();
+        scrollToSnakeCenter();
+    }
+
+    window.addEventListener('resize', () => { 
+        clearTimeout(resizeTimer); 
+        resizeTimer = setTimeout(initializeAllVisuals, 250); 
+    });
+    
+    applyTheme(initialTheme);
+    if (document.readyState === 'complete' || document.readyState === 'interactive') { 
+        initializeAllVisuals(); 
+    } else { 
+        document.addEventListener('DOMContentLoaded', initializeAllVisuals); 
+    }
+  </script>
+</body>
+</html>
