@@ -372,7 +372,7 @@
     }
     #popular-vote-chart-svg:hover .pv-hover-overlay-rect {
       stroke: var(--border-light);
-      stroke-width: 0.4;
+      stroke-width: 0.3;
     }
     body.dark #popular-vote-chart-svg:hover .pv-hover-overlay-rect {
       stroke: var(--border-dark);
@@ -392,68 +392,39 @@
     .pv-legend-current-values .legend-color.jr { background-color: var(--crimson); }
     .pv-legend-current-values strong { font-weight: 600; }
 
-    /* Clean Tooltip for PV Chart Hover - Enhanced */
-    .tooltip-pv-content { 
-      background: transparent; 
-      border: none; 
-      box-shadow: none;
-      padding: 0;
-      min-width: clamp(200px, 20vw, 280px);
-    }
-    .tooltip-pv-content .header { 
-      font-weight: 700; 
-      font-size: clamp(0.9rem, 1.1vw, 1.1rem); 
-      margin-bottom: clamp(8px, 1vw, 12px); 
-      padding: clamp(10px, 1.2vw, 16px) clamp(14px, 1.5vw, 20px);
+    /* Compact Tooltip for PV Chart Hover */
+    .tooltip-pv-content {
       background: var(--tooltip-bg-light);
-      border-radius: clamp(8px, 1vw, 12px);
-      box-shadow: 0 4px 16px var(--tooltip-shadow-light);
-      text-align: center;
       border: 1px solid var(--border-light);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-    body.dark .tooltip-pv-content .header { 
-      background: var(--tooltip-bg-dark);
-      box-shadow: 0 4px 16px var(--tooltip-shadow-dark);
-      border-color: var(--border-dark);
-    }
-    .tooltip-pv-content .pv-item { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: baseline; 
-      font-size: clamp(0.85rem, 1vw, 1rem); 
-      margin-bottom: clamp(4px, 0.5vw, 6px);
-      padding: clamp(6px, 0.8vw, 10px) clamp(10px, 1.2vw, 16px);
-      background: var(--tooltip-bg-light);
-      border-radius: clamp(6px, 0.8vw, 10px);
-      box-shadow: 0 2px 8px var(--tooltip-shadow-light);
-      border: 1px solid var(--border-light);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      transition: all 0.2s ease;
-    }
-    body.dark .tooltip-pv-content .pv-item {
-      background: var(--tooltip-bg-dark);
-      box-shadow: 0 2px 8px var(--tooltip-shadow-dark);
-      border-color: var(--border-dark);
-    }
-    .tooltip-pv-content .pv-item:hover {
-      transform: translateY(-1px);
+      border-radius: 8px;
       box-shadow: 0 4px 12px var(--tooltip-shadow-light);
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      min-width: clamp(180px, 18vw, 240px);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
-    body.dark .tooltip-pv-content .pv-item:hover {
+    body.dark .tooltip-pv-content {
+      background: var(--tooltip-bg-dark);
+      border-color: var(--border-dark);
       box-shadow: 0 4px 12px var(--tooltip-shadow-dark);
     }
-    .tooltip-pv-content .pv-item .candidate { font-weight: 700; min-width: clamp(100px, 12vw, 130px); }
-    .tooltip-pv-content .pv-item .value { font-family: 'Source Code Pro', monospace; font-weight: 600; text-align: right; min-width: clamp(45px, 5vw, 60px); }
-    .tooltip-pv-content .pv-item .ci-range { font-size: clamp(0.75rem, 0.9vw, 0.9rem); color: var(--text-secondary-light); margin-left: clamp(6px, 0.8vw, 10px); text-align: right; min-width: clamp(75px, 8vw, 95px);}
-    body.dark .tooltip-pv-content .pv-item .ci-range { color: var(--text-secondary-dark); }
-    .tooltip-pv-content .pv-item.mm .candidate { color: var(--navy); }
-    .tooltip-pv-content .pv-item.jr .candidate { color: var(--crimson); }
-    .tooltip-pv-content .pv-item.net-lead .candidate { font-weight: 600; color: var(--text-secondary-light); }
-    body.dark .tooltip-pv-content .pv-item.net-lead .candidate { color: var(--text-secondary-dark); }
-    .tooltip-pv-content .pv-item.net-lead .value { font-weight: 700; }
+    .tooltip-pv-content .header {
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .tooltip-pv-content .pv-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+    .tooltip-pv-content .pv-row:last-child { margin-bottom: 0; }
+    .tooltip-pv-content .candidate { font-weight: 600; }
+    .tooltip-pv-content .mm .candidate { color: var(--navy); }
+    .tooltip-pv-content .jr .candidate { color: var(--crimson); }
+    .tooltip-pv-content .value { font-family: 'Source Code Pro', monospace; font-weight: 600; text-align: right; }
 
 
     /* Universal Tooltip (for map, dot plot, snake chart HOVER) - Enhanced */
@@ -1190,17 +1161,15 @@
             universalTooltipEl.innerHTML = `
                 <div class="tooltip-pv-content">
                     <div class="header">${dateFormatted}, 2048</div>
-                    <div class="pv-item mm">
+                    <div class="pv-row mm">
                         <span class="candidate">ModerateMonicka:</span>
                         <span class="value">${smoothedMM.toFixed(1)}%</span>
-                        <span class="ci-range">(${dataPoint.mmLower.toFixed(1)}-${dataPoint.mmUpper.toFixed(1)}%)</span>
                     </div>
-                    <div class="pv-item jr">
+                    <div class="pv-row jr">
                         <span class="candidate">JR:</span>
                         <span class="value">${smoothedJR.toFixed(1)}%</span>
-                        <span class="ci-range">(${dataPoint.jrLower.toFixed(1)}-${dataPoint.jrUpper.toFixed(1)}%)</span>
                     </div>
-                    <div class="pv-item net-lead">
+                    <div class="pv-row net">
                         <span class="candidate">Net:</span>
                         <span class="value" style="color: ${netLead > 0 ? 'var(--navy)' : 'var(--crimson)'};">${netLeadFormatted}</span>
                     </div>
